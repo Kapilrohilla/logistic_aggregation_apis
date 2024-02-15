@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 const app = express();
 import config from "./src/utils/config";
 import orderRouter from "./src/routes/order.routes";
+import { AuthMiddleware, ErrorHandler } from "./src/utils/middleware";
 
 app.use(express.json());
 
@@ -26,12 +27,18 @@ mongoose
   });
 
 app.use("/auth", authRouter);
+
+// @ts-ignore (as Request object is extended with new property seller)
+app.use(AuthMiddleware);
+
 app.use("/order", orderRouter);
 
+app.use(ErrorHandler);
 app.use("*", (req: Request, res: Response) => {
   return res.status(404).send({
     valid: false,
     message: "invalid route",
   });
 });
+
 app.listen(config.PORT, () => console.log("server running on port " + config.PORT));

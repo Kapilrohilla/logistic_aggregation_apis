@@ -1,4 +1,4 @@
-import UserModel from "../models/seller.model";
+import SellerModel from "../models/seller.model";
 import type { NextFunction, Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -18,13 +18,7 @@ export const signup = async (req: Request, res: Response, next: NextFunction) =>
       message: "name, email, password is required",
     });
   }
-  if (
-    !(
-      typeof body.password === "string" &&
-      typeof body.email === "string" &&
-      typeof body.name === "string"
-    )
-  ) {
+  if (!(typeof body.password === "string" && typeof body.email === "string" && typeof body.name === "string")) {
     return res.status(200).send({
       valid: false,
       message: "invalid body properties type",
@@ -40,7 +34,7 @@ export const signup = async (req: Request, res: Response, next: NextFunction) =>
     });
   }
 
-  const isAvailable = (await UserModel.findOne({ email: body.email }).lean()) !== null;
+  const isAvailable = (await SellerModel.findOne({ email: body.email }).lean()) !== null;
 
   if (isAvailable) {
     return res.send({
@@ -51,7 +45,7 @@ export const signup = async (req: Request, res: Response, next: NextFunction) =>
 
   const hashPassword = await bcrypt.hash(body?.password, config.SALT_ROUND!);
 
-  const user = new UserModel({ name: body?.name, email: body?.email, password: hashPassword });
+  const user = new SellerModel({ name: body?.name, email: body?.email, password: hashPassword });
   let savedUser;
   try {
     savedUser = await user.save();
@@ -85,7 +79,7 @@ export const login = async (req: Request, res: Response) => {
     });
   }
 
-  const existingUser = await UserModel.findOne({ email: body.email }).lean();
+  const existingUser = await SellerModel.findOne({ email: body.email }).lean();
   if (!existingUser) {
     return res.status(200).send({
       valid: false,

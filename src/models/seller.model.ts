@@ -19,6 +19,6 @@ const sellerSchema = new mongoose.Schema({
   },
 });
 
-const UserModel = mongoose.model("Seller", sellerSchema);
+const SellerModel = mongoose.model("Seller", sellerSchema);
 
-export default UserModel;
+export default SellerModel;
