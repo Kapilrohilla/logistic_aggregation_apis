@@ -1,22 +1,30 @@
-import UserModel from "../models/user.model";
+import UserModel from "../models/seller.model";
 import type { NextFunction, Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import config from "../utils/config";
 import { validateEmail } from "../utils/helpers";
 
-type SignupBodyType = { email: any; password: any };
+type SignupBodyType = { email: any; password: any; name: any };
 
 export const signup = async (req: Request, res: Response, next: NextFunction) => {
   const body: SignupBodyType = req.body;
 
-  if (!(body?.password && body?.email)) {
+  // console.log(body, " signup body");
+
+  if (!(body?.password && body?.email && body.name)) {
     return res.status(200).send({
       valid: false,
-      message: "email, password is required",
+      message: "name, email, password is required",
     });
   }
-  if (!(typeof body.password === "string" && typeof body.email === "string")) {
+  if (
+    !(
+      typeof body.password === "string" &&
+      typeof body.email === "string" &&
+      typeof body.name === "string"
+    )
+  ) {
     return res.status(200).send({
       valid: false,
       message: "invalid body properties type",
@@ -43,7 +51,7 @@ export const signup = async (req: Request, res: Response, next: NextFunction) =>
 
   const hashPassword = await bcrypt.hash(body?.password, config.SALT_ROUND!);
 
-  const user = new UserModel({ email: body?.email, password: hashPassword });
+  const user = new UserModel({ name: body?.name, email: body?.email, password: hashPassword });
   let savedUser;
   try {
     savedUser = await user.save();
@@ -56,6 +64,7 @@ export const signup = async (req: Request, res: Response, next: NextFunction) =>
     user: {
       email: savedUser.email,
       id: savedUser._id,
+      name: savedUser.name,
       isVerified: savedUser.isVerified,
     },
   });

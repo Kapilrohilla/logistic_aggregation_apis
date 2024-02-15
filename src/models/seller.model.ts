@@ -1,6 +1,10 @@
 import mongoose from "mongoose";
 
-const userSchema = new mongoose.Schema({
+const sellerSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+  },
   email: {
     type: String,
     required: true,
@@ -15,6 +19,6 @@ const userSchema = new mongoose.Schema({
   },
 });
 
-const UserModel = mongoose.model("User", userSchema);
+const UserModel = mongoose.model("Seller", sellerSchema);
 
 export default UserModel;
