@@ -4,6 +4,7 @@ import authRouter from "./src/routes/auth.routes";
 import mongoose from "mongoose";
 const app = express();
 import config from "./src/utils/config";
+import orderRouter from "./src/routes/order.routes";
 
 app.use(express.json());
 
@@ -25,6 +26,7 @@ mongoose
   });
 
 app.use("/auth", authRouter);
+app.use("/order", orderRouter);
 
 app.use("*", (req: Request, res: Response) => {
   return res.status(404).send({
