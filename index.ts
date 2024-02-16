@@ -6,6 +6,8 @@ const app = express();
 import config from "./src/utils/config";
 import orderRouter from "./src/routes/order.routes";
 import { AuthMiddleware, ErrorHandler } from "./src/utils/middleware";
+import { connectSmartShip } from "./src/utils/helpers";
+import hubRouter from "./src/routes/hub.routes";
 
 app.use(express.json());
 
@@ -21,6 +23,7 @@ mongoose
   .connect(process.env.MONGODB_URI!)
   .then(() => {
     console.log(" db connected successfully");
+    connectSmartShip();
   })
   .catch((err) => {
     console.log(err.message);
@@ -31,6 +34,7 @@ app.use("/auth", authRouter);
 // @ts-ignore (as Request object is extended with new property seller)
 app.use(AuthMiddleware);
 
+app.use("/hub", hubRouter);
 app.use("/order", orderRouter);
 
 app.use(ErrorHandler);
