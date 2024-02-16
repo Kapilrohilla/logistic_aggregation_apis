@@ -9,12 +9,6 @@ export const validateEmail = (email: string) => {
 };
 
 export const connectSmartShip = () => {
-  console.log(config.SMART_SHIP_USERNAME);
-  console.log(config.SMART_SHIP_PASSWORD);
-  console.log(config.SMART_SHIP_CLIENT_ID);
-  console.log(config.SMART_SHIP_CLIENT_SECRET);
-  console.log(config.SMART_SHIP_GRANT_TYPE);
-
   const requestBody = {
     username: config.SMART_SHIP_USERNAME,
     password: config.SMART_SHIP_PASSWORD,

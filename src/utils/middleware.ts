@@ -59,10 +59,15 @@ export const ErrorHandler = (err: any, req: Request, res: Response, next: NextFu
         message: "Token expired",
       });
     }
+    console.log(err);
+    return res.status(200).send({
+      valid: false,
+      message: "something went wrong",
+    });
   } else {
     return res.status(200).send({
-      valid: true,
-      err: "Something went wrong",
+      valid: false,
+      message: "Something went wrong",
     });
   }
 };
