@@ -1,53 +1,53 @@
 import mongoose from "mongoose";
 
 const ProductSchema = new mongoose.Schema({
-  client_product_reference_id: {
+  // client_reference_id: {
+  //   type: String,
+  //   required: true,
+  // },
+  name: {
     type: String,
     required: true,
   },
-  product_name: {
+  category: {
     type: String,
     required: true,
   },
-  product_category: {
+  hsn_code: {
     type: String,
     required: true,
   },
-  product_hsn_code: {
+  quantity: {
     type: String,
     required: true,
   },
-  product_quantity: {
+  invoice_value: {
     type: String,
-    required: true,
+    required: false,
   },
-  product_invoice_value: {
+  gst_tax_rate: {
     type: String,
-    required: true,
+    required: false,
   },
-  product_gst_tax_rate: {
+  taxable_value: {
     type: String,
-    required: true,
+    required: false,
   },
-  product_taxable_value: {
+  sgst_amount: {
     type: String,
-    required: true,
+    required: false,
   },
-  product_sgst_amount: {
+  sgst_tax_rate: {
     type: String,
-    required: true,
+    required: false,
   },
-  product_sgst_tax_rate: {
+  cgst_amount: {
     type: String,
-    required: true,
+    required: false,
   },
-  product_cgst_amount: {
+  cgst_tax_rate: {
     type: String,
-    required: true,
-  },
-  product_cgst_tax_rate: {
-    type: String,
-    required: true,
+    required: false,
   },
 });
 
