@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import type { ExtendedRequest } from "../utils/middleware";
 import { B2COrderModel, B2BOrderModel } from "../models/order.model";
 import ProductModel from "../models/product.model";
+import HubModel from "../models/hub.model";
 // import ConsigneeModel from "customer_details../models/consignee.model";
 
 // currently as per B2C
@@ -23,6 +24,23 @@ export const createB2COrder = async (req: ExtendedRequest, res: Response, next: 
       message: "customer details required",
     });
   }
+
+  // validating picup address start
+  if (!body?.pickupAddress) {
+    return res.status(200).send({
+      valid: false,
+      message: "Pickup address is required",
+    });
+  }
+  try {
+    const doesItExists = (await HubModel.findById(body?.pickupAddress)) !== null;
+    if (!doesItExists) {
+      return res.status(200).send({ valid: false, message: "pickup address doesn't exists as hub" });
+    }
+  } catch (err) {
+    return next(err);
+  }
+  // validating picup address end
 
   // product validation and saving to db start here...
   if (!body?.productDetails) {
@@ -81,6 +99,7 @@ export const createB2COrder = async (req: ExtendedRequest, res: Response, next: 
     isB2C: true,
     sellerId: req.seller._id,
     productId: savedProduct._id,
+    pickupAddress: body?.pickupAddress,
     b2C_consigneeDetails: {
       name: customerDetails.name,
       email: customerDetails.email,
@@ -132,15 +151,34 @@ export const createB2BOrder = async (req: Request, res: Response, next: NextFunc
 
   // checking if the order already exists with same "client_reference_order_id"
   const isAlreadyExists =
-    B2BOrderModel.findOne({ client_reference_order_id: body?.client_reference_order_id }).lean() !== null;
+    (await B2BOrderModel.findOne({ client_reference_order_id: body?.client_reference_order_id }).lean()) !== null;
 
-  console.log(isAlreadyExists);
   if (isAlreadyExists) {
     return res.status(200).send({
       valid: false,
       message: `Order already exists with client_reference_order_id: ${body?.client_reference_order_id} `,
     });
   }
+
+  // validating pickup address
+
+  if (!body?.pickupAddress) {
+    return res.status(200).send({
+      valid: false,
+      message: "Pickup address is required",
+    });
+  }
+  try {
+    const doesItExists = (await HubModel.findById(body?.pickupAddress)) !== null;
+    if (!doesItExists) {
+      return res.status(200).send({ valid: false, message: "pickup address doesn't exists as hub" });
+    }
+  } catch (err) {
+    return next(err);
+  }
+
+  // validating pickup address end
+
   const order2save = new B2BOrderModel(body);
   let savedOrder;
   try {
@@ -152,8 +190,8 @@ export const createB2BOrder = async (req: Request, res: Response, next: NextFunc
       savedOrder,
     });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 
-  return res.status(200).send({ valid: false, message: "incomplet route" });
+  return res.status(200).json({ valid: true, order: savedOrder });
 };

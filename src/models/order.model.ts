@@ -5,6 +5,7 @@ const B2COrderSchema = new mongoose.Schema({
   // isB2C: { type: Boolean, required: true },
   //  will require seller details / maybe hub details
   order_refernce_id: { type: String, required: true, unique: true },
+  pickupAddress: { type: mongoose.Schema.Types.ObjectId },
   productId: { type: mongoose.Schema.Types.ObjectId, ref: "Products" },
   shipmentValue: { type: Number, required: true },
   taxValue: { type: Number, required: true },
@@ -126,6 +127,7 @@ const B2BOrderSchema = new mongoose.Schema({
   invoiceNumber: { type: String, required: true },
   shipperGST: { type: String, required: true },
   consigneeGST: { type: String, required: true },
+  pickupAddress: { type: String, required: true },
   consigneeAddress: { type: String, required: true },
 });
 
