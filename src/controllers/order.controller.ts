@@ -1,14 +1,15 @@
 import { Request, Response, NextFunction } from "express";
 import type { ExtendedRequest } from "../utils/middleware";
-import OrderModel from "../models/order.model";
+import { B2COrderModel, B2BOrderModel } from "../models/order.model";
 import ProductModel from "../models/product.model";
 // import ConsigneeModel from "customer_details../models/consignee.model";
+
 // currently as per B2C
-export const createOrder = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
+export const createB2COrder = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
   const body = req.body;
   // "const { isB2C } = body;
 
-  const isAlreadyExists = (await OrderModel.findOne({ order_refernce_id: body?.order_refernce_id }).lean()) !== null;
+  const isAlreadyExists = (await B2COrderModel.findOne({ order_refernce_id: body?.order_refernce_id }).lean()) !== null;
   if (isAlreadyExists) {
     return res.status(200).send({
       valid: true,
@@ -75,7 +76,7 @@ export const createOrder = async (req: ExtendedRequest, res: Response, next: Nex
   }
   // product validation and saving to end here...
 
-  const order2save = new OrderModel({
+  const order2save = new B2COrderModel({
     ...body,
     isB2C: true,
     sellerId: req.seller._id,
@@ -91,7 +92,7 @@ export const createOrder = async (req: ExtendedRequest, res: Response, next: Nex
 
   let savedOrder;
   try {
-    const order = new OrderModel(order2save);
+    const order = new B2COrderModel(order2save);
     savedOrder = await (await order.save()).populate("productId");
   } catch (err) {
     return next(err);
@@ -115,8 +116,8 @@ export const getOrders = async (req: ExtendedRequest, res: Response, next: NextF
   console.log(skip);
   let orders, orderCount;
   try {
-    orders = await OrderModel.find({ sellerId }).limit(limit).skip(skip).populate("productId");
-    orderCount = await OrderModel.countDocuments();
+    orders = await B2COrderModel.find({ sellerId }).limit(limit).skip(skip).populate("productId");
+    orderCount = await B2COrderModel.countDocuments();
   } catch (err) {
     return next(err);
   }
@@ -126,10 +127,33 @@ export const getOrders = async (req: ExtendedRequest, res: Response, next: NextF
   });
 };
 
-// export const getOrders = (req: ExtendedRequest, res: Response, next: NextFunction) => {
-//   console.log(req.seller);
-//   return res.status(200).send({
-//     valid: false,
-//     message: "Incomplete route",
-//   });
-// };
+export const createB2BOrder = async (req: Request, res: Response, next: NextFunction) => {
+  const body = req.body;
+
+  // checking if the order already exists with same "client_reference_order_id"
+  const isAlreadyExists =
+    B2BOrderModel.findOne({ client_reference_order_id: body?.client_reference_order_id }).lean() !== null;
+
+  console.log(isAlreadyExists);
+  if (isAlreadyExists) {
+    return res.status(200).send({
+      valid: false,
+      message: `Order already exists with client_reference_order_id: ${body?.client_reference_order_id} `,
+    });
+  }
+  const order2save = new B2BOrderModel(body);
+  let savedOrder;
+  try {
+    savedOrder = await order2save.save();
+
+    return res.status(200).send({
+      valid: false,
+      message: "order created successfully",
+      savedOrder,
+    });
+  } catch (err) {
+    next(err);
+  }
+
+  return res.status(200).send({ valid: false, message: "incomplet route" });
+};

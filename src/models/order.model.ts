@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
-const OrderSchema = new mongoose.Schema({
+const B2COrderSchema = new mongoose.Schema({
   sellerId: { type: mongoose.Schema.Types.ObjectId, ref: "Seller", required: true },
-  isB2C: { type: Boolean, required: true },
+  // isB2C: { type: Boolean, required: true },
   //  will require seller details / maybe hub details
   order_refernce_id: { type: String, required: true, unique: true },
   productId: { type: mongoose.Schema.Types.ObjectId, ref: "Products" },
@@ -105,5 +105,29 @@ const OrderSchema = new mongoose.Schema({
 //   ],
 // });
 
-const OrderModel = mongoose.model("Orders", OrderSchema);
-export default OrderModel;
+const B2BOrderSchema = new mongoose.Schema({
+  lrNo: { type: String, required: true },
+  isManual: { type: Boolean, required: false },
+  clientName: { type: String, required: true },
+  paymentType: { type: String, required: true },
+  pickupType: { type: String, required: true },
+  insuranceType: { type: String, required: true },
+  pickupLocation: { type: String, required: true },
+  productDescription: { type: String, required: true },
+  totalShipmentWeight: { type: String, required: true },
+  client_reference_order_id: { type: String, required: true, unique: true },
+  quantity: { type: Number, required: true },
+  sizeUnit: { type: String, required: true },
+  dimensionsQuantity: { type: Number, required: true },
+  invoiceType: { type: String, required: true },
+  amount2collect: { type: String, required: true },
+  ewaybill: { type: String, required: true },
+  amount: { type: String, required: true },
+  invoiceNumber: { type: String, required: true },
+  shipperGST: { type: String, required: true },
+  consigneeGST: { type: String, required: true },
+  consigneeAddress: { type: String, required: true },
+});
+
+export const B2COrderModel = mongoose.model("Orders", B2COrderSchema);
+export const B2BOrderModel = mongoose.model("B2BOrder", B2BOrderSchema);
