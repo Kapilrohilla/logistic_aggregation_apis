@@ -2,11 +2,27 @@ import { Request, Response, NextFunction } from "express";
 import type { ExtendedRequest } from "../utils/middleware";
 import OrderModel from "../models/order.model";
 import ProductModel from "../models/product.model";
-
+// import ConsigneeModel from "customer_details../models/consignee.model";
 // currently as per B2C
 export const createOrder = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
   const body = req.body;
-  const { isB2C } = body;
+  // "const { isB2C } = body;
+
+  const isAlreadyExists = (await OrderModel.findOne({ order_refernce_id: body?.order_refernce_id }).lean()) !== null;
+  if (isAlreadyExists) {
+    return res.status(200).send({
+      valid: true,
+      message: `order exists with ${body?.order_refernce_id} order_reference_id`,
+    });
+  }
+
+  if (!body?.customer_details) {
+    return res.status(200).send({
+      valid: false,
+      message: "customer details required",
+    });
+  }
+
   // product validation and saving to db start here...
   if (!body?.productDetails) {
     return res.status(200).send({
@@ -42,21 +58,35 @@ export const createOrder = async (req: ExtendedRequest, res: Response, next: Nex
   } catch (err) {
     return next(err);
   }
-
-  const isAlreadyExists = (await OrderModel.findOne({ order_refernce_id: body?.order_refernce_id }).lean()) !== null;
-  console.log(isAlreadyExists);
-  if (isAlreadyExists) {
+  const customerDetails = body?.customer_details;
+  if (
+    !(
+      customerDetails.name &&
+      customerDetails.email &&
+      customerDetails.phone &&
+      customerDetails.address &&
+      customerDetails.pincode
+    )
+  ) {
     return res.status(200).send({
-      valid: true,
-      message: `order exists with ${body?.order_refernce_id} order_reference_id`,
+      valid: false,
+      message: "customer details are required",
     });
   }
   // product validation and saving to end here...
+
   const order2save = new OrderModel({
     ...body,
     isB2C: true,
     sellerId: req.seller._id,
     productId: savedProduct._id,
+    b2C_consigneeDetails: {
+      name: customerDetails.name,
+      email: customerDetails.email,
+      phone: customerDetails.phone,
+      address: customerDetails.address,
+      pincode: customerDetails.pincode,
+    },
   });
 
   let savedOrder;

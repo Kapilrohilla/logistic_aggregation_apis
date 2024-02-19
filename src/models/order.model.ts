@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 const OrderSchema = new mongoose.Schema({
   sellerId: { type: mongoose.Schema.Types.ObjectId, ref: "Seller", required: true },
   isB2C: { type: Boolean, required: true },
+  //  will require seller details / maybe hub details
   order_refernce_id: { type: String, required: true, unique: true },
   productId: { type: mongoose.Schema.Types.ObjectId, ref: "Products" },
   shipmentValue: { type: Number, required: true },
@@ -20,6 +21,13 @@ const OrderSchema = new mongoose.Schema({
   sizeUnit: { type: String, required: true },
   boxWeight: { type: Number, required: true },
   weightUnit: { type: String, required: true },
+  b2C_consigneeDetails: {
+    name: { type: String, required: true },
+    email: { type: String, required: true },
+    phone: { type: String, required: true },
+    address: { type: String, required: true },
+    pincode: { type: String, required: true },
+  },
 });
 
 // const OrderSchema = new mongoose.Schema({

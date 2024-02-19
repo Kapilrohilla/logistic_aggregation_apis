@@ -1,6 +1,10 @@
 import mongoose from "mongoose";
 
 const consigneeModel = new mongoose.Schema({
+  order_refernce_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Orders",
+  },
   consignee_name: {
     type: String,
     required: true,
@@ -24,3 +28,4 @@ const consigneeModel = new mongoose.Schema({
 });
 
 const ConsigneeModel = mongoose.model("Consignee", consigneeModel);
+export default ConsigneeModel;
