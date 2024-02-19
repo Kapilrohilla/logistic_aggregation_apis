@@ -43,6 +43,14 @@ export const createOrder = async (req: ExtendedRequest, res: Response, next: Nex
     return next(err);
   }
 
+  const isAlreadyExists = (await OrderModel.findOne({ order_refernce_id: body?.order_refernce_id }).lean()) !== null;
+  console.log(isAlreadyExists);
+  if (isAlreadyExists) {
+    return res.status(200).send({
+      valid: true,
+      message: `order exists with ${body?.order_refernce_id} order_reference_id`,
+    });
+  }
   // product validation and saving to end here...
   const order2save = new OrderModel({
     ...body,

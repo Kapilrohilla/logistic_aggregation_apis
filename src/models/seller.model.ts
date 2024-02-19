@@ -13,6 +13,10 @@ const sellerSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  wallerBalance: {
+    type: Number,
+    default: 0,
+  },
   isVerified: {
     type: Boolean,
     default: false,
