@@ -91,14 +91,14 @@ export const login = async (req: Request, res: Response) => {
 
   if (!isValidPassword) {
     return res.status(200).send({
-      valid: true,
+      valid: false,
       message: "incorrect password",
     });
   }
 
   const token = jwt.sign(existingUser, config.JWT_SECRET!, { expiresIn: "7d" });
 
-  return res.status(500).send({
+  return res.status(200).send({
     valid: true,
     user: {
       email: existingUser.email,
