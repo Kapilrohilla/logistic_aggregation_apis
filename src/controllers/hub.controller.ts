@@ -37,14 +37,22 @@ export const createHub = async (req: ExtendedRequest, res: Response, next: NextF
     });
   }
 
+  const isAlreadyExists = (await HubModel.findOne({ name, sellerId: req.seller._id }).lean()) !== null;
   // create hub using smartship api
+  if (isAlreadyExists) {
+    return res.status(200).send({
+      valid: false,
+      message: `Hub already exists with name: ${name}`,
+    });
+  }
 
-  // after success
-  const isSuccess = false;
-  const code = 200;
-  const message = "success";
-  const hub_id = 1234523;
-  const delivery_type_id = 1;
+  // // after success
+  // const isSuccess = false;
+
+  // const code = 200;
+  // const message = "success";
+  // const hub_id = 1234523;
+  // const delivery_type_id = 1;
 
   let savedHub;
   try {
@@ -58,11 +66,11 @@ export const createHub = async (req: ExtendedRequest, res: Response, next: NextF
       address2,
       phone,
 
-      isSuccess,
-      code,
-      message,
-      hub_id,
-      delivery_type_id,
+      // isSuccess,
+      // code,
+      // message,
+      // hub_id,
+      // delivery_type_id,
     });
     savedHub = await toSaveHub.save();
   } catch (err) {
