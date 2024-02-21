@@ -6,9 +6,11 @@ const app = express();
 import config from "./src/utils/config";
 import orderRouter from "./src/routes/order.routes";
 import { AuthMiddleware, ErrorHandler } from "./src/utils/middleware";
-import { connectSmartShip } from "./src/utils/helpers";
+import { addVendors, connectSmartShip } from "./src/utils/helpers";
 import hubRouter from "./src/routes/hub.routes";
+import cors from "cors";
 
+app.use(cors());
 app.use(express.json());
 
 app.get("/ping", (_req, res: Response) => {
@@ -30,6 +32,7 @@ mongoose
   });
 
 app.use("/auth", authRouter);
+app.post("/vendor", addVendors);
 
 // @ts-ignore (as Request object is extended with new property seller)
 app.use(AuthMiddleware);

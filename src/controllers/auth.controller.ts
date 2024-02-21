@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import config from "../utils/config";
 import { validateEmail } from "../utils/helpers";
+import VendorModel from "../models/vendor.model";
 
 type SignupBodyType = { email: any; password: any; name: any };
 
@@ -45,13 +46,25 @@ export const signup = async (req: Request, res: Response, next: NextFunction) =>
 
   const hashPassword = await bcrypt.hash(body?.password, config.SALT_ROUND!);
 
-  const user = new SellerModel({ name: body?.name, email: body?.email, password: hashPassword });
+  const vendors = await VendorModel.find({});
+  console.log(vendors);
+  const vendorsId = vendors.reduce((acc: any, cv: any) => {
+    return acc.concat(cv._id);
+  }, []);
+
+  // return res.send({
+  //   vendorsId,
+  // });
+  const user = new SellerModel({ name: body?.name, email: body?.email, password: hashPassword, vendors: vendors });
+
   let savedUser;
   try {
     savedUser = await user.save();
   } catch (err) {
     return next(err);
   }
+
+  console.log(savedUser);
 
   return res.send({
     valid: true,
@@ -60,6 +73,7 @@ export const signup = async (req: Request, res: Response, next: NextFunction) =>
       id: savedUser._id,
       name: savedUser.name,
       isVerified: savedUser.isVerified,
+      vendors: savedUser.vendors,
     },
   });
 };
