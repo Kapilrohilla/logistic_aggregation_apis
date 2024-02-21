@@ -10,9 +10,15 @@ import { addVendors, connectSmartShip, getSellers } from "./src/utils/helpers";
 import hubRouter from "./src/routes/hub.routes";
 import cors from "cors";
 import customerRouter from "./src/routes/customer.routes";
+import morgan from "morgan";
 
 app.use(cors());
+
 app.use(express.json());
+
+//@ts-ignore
+morgan.token("reqbody", (req, res) => JSON.stringify(req.body));
+app.use(morgan(":method :url :status - :response-time ms - :reqbody"));
 
 app.get("/ping", (_req, res: Response) => {
   return res.send("pong");
