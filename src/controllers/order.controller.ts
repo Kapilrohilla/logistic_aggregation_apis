@@ -4,8 +4,8 @@ import { B2COrderModel, B2BOrderModel } from "../models/order.model";
 import ProductModel from "../models/product.model";
 import HubModel from "../models/hub.model";
 import VendorModel from "../models/vendor.model";
-import { MetroCitys, NorthEastStates, getNextDateWithDesiredTiming, getPincodeDetails } from "../utils/helpers";
-import PincodeModel from "../models/pincode.model";
+import { MetroCitys, NorthEastStates, getPincodeDetails } from "../utils/helpers";
+import { isValidObjectId } from "mongoose";
 // import ConsigneeModel from "customer_details../models/consignee.model";
 
 export const createB2COrder = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
@@ -146,6 +146,17 @@ export const getOrders = async (req: ExtendedRequest, res: Response, next: NextF
 export const createB2BOrder = async (req: Request, res: Response, next: NextFunction) => {
   const body = req.body;
 
+  // validating pickup address
+  if (!body?.pickupAddress) {
+    return res.status(200).send({
+      valid: false,
+      message: "pickupAddress required",
+    });
+  }
+  if (isValidObjectId(body?.pickupAddress)) {
+    return res.status(200).send({ valid: false, message: "invalid pickupAddress" });
+  }
+
   // checking if the order already exists with same "client_reference_order_id"
   const isAlreadyExists =
     (await B2BOrderModel.findOne({ client_reference_order_id: body?.client_reference_order_id }).lean()) !== null;
@@ -157,14 +168,6 @@ export const createB2BOrder = async (req: Request, res: Response, next: NextFunc
     });
   }
 
-  // validating pickup address
-
-  if (!body?.pickupAddress) {
-    return res.status(200).send({
-      valid: false,
-      message: "Pickup address is required",
-    });
-  }
   try {
     const doesItExists = (await HubModel.findById(body?.pickupAddress)) !== null;
     if (!doesItExists) {
@@ -221,7 +224,8 @@ export const getCourier = async (req: ExtendedRequest, res: Response, next: Next
   const totalBoxWeight = orderDetails?.boxWeight * orderDetails?.numberOfBox;
   let orderWeight: number | null = null;
   if (orderDetails?.sizeUnit === "cm") {
-    const totalVolumetricWeight = (orderDetails?.boxHeight * orderDetails?.boxWeight * orderDetails?.boxLength) / 5000;
+    const totalVolumetricWeight =
+      (orderDetails?.boxHeight * Number(orderDetails?.boxWeight) * orderDetails?.boxLength) / 5000;
     orderWeight = totalBoxWeight > totalVolumetricWeight ? totalBoxWeight : totalVolumetricWeight;
   } else if (orderDetails?.sizeUnit === "m") {
     const totalVolumetricWeight = (orderDetails?.boxHeight * orderDetails?.boxWeight * orderDetails?.boxLength) / 5;
@@ -239,7 +243,6 @@ export const getCourier = async (req: ExtendedRequest, res: Response, next: Next
   console.log(pickupAddress);
   // @ts-ignore
   const customerDetails = orderDetails.customerDetails;
-
   const margin = seller.margin || 100;
   const vendors = seller.vendors;
 
