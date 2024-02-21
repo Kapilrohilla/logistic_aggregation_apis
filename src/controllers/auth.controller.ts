@@ -55,7 +55,7 @@ export const signup = async (req: Request, res: Response, next: NextFunction) =>
   // return res.send({
   //   vendorsId,
   // });
-  const user = new SellerModel({ name: body?.name, email: body?.email, password: hashPassword, vendors: vendors });
+  const user = new SellerModel({ name: body?.name, email: body?.email, password: hashPassword, vendors: vendorsId });
 
   let savedUser;
   try {
@@ -63,8 +63,6 @@ export const signup = async (req: Request, res: Response, next: NextFunction) =>
   } catch (err) {
     return next(err);
   }
-
-  console.log(savedUser);
 
   return res.send({
     valid: true,

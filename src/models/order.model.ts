@@ -143,5 +143,5 @@ const B2BOrderSchema = new mongoose.Schema({
   },
 });
 
-export const B2COrderModel = mongoose.model("Orders", B2COrderSchema);
+export const B2COrderModel = mongoose.model("B2COrders", B2COrderSchema);
 export const B2BOrderModel = mongoose.model("B2BOrder", B2BOrderSchema);

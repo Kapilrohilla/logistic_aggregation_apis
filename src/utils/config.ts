@@ -19,6 +19,8 @@ const SMART_SHIP_CLIENT_SECRET = process.env.client_secret;
 
 const SMART_SHIP_GRANT_TYPE = process.env.grant_type;
 
+const SMART_SHIP_API_BASEURL = process.env.SMARTSHIP_API_BASEURL;
+
 const config = {
   MONGODB_URI,
   SALT_ROUND,
@@ -29,6 +31,7 @@ const config = {
   SMART_SHIP_CLIENT_ID,
   SMART_SHIP_CLIENT_SECRET,
   SMART_SHIP_GRANT_TYPE,
+  SMART_SHIP_API_BASEURL,
 };
 
 export default config;

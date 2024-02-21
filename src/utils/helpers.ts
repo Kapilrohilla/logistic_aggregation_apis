@@ -25,7 +25,7 @@ export const connectSmartShip = () => {
   axios
     .post("https://oauth.smartship.in/loginToken.php", requestBody)
     .then((r) => {
-      console.log("SmartShip API response: " + r.data);
+      console.log("SmartShip API response: " + JSON.stringify(r.data));
       const responseBody = r.data;
       const savedEnv = new EnvModel(responseBody);
       EnvModel.deleteMany({})
@@ -187,6 +187,7 @@ export const ratecalculatorController = async (req: ExtendedRequest, res: Respon
     }
 
     const minWeight = cv.weightSlab;
+    // TODO apply cod
     //@ts-ignore
     const weightIncrementRatio = (orderWeight - minWeight) / cv.incrementWeight;
     let totalCharge = increment_price.basePrice + increment_price?.incrementPrice * weightIncrementRatio;

@@ -219,7 +219,7 @@ export const getCourier = async (req: ExtendedRequest, res: Response, next: Next
       return next(err);
     }
   }
-
+  //TODO apply COD
   // @ts-ignore
   const totalBoxWeight = orderDetails?.boxWeight * orderDetails?.numberOfBox;
   let orderWeight: number | null = null;
