@@ -1,4 +1,4 @@
-import { Response, NextFunction } from "express";
+import type { Response, NextFunction } from "express";
 import type { ExtendedRequest } from "../utils/middleware";
 import HubModel from "../models/hub.model";
 import { isValidObjectId } from "mongoose";

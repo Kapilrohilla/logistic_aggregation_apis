@@ -9,6 +9,7 @@ import { AuthMiddleware, ErrorHandler } from "./src/utils/middleware";
 import { addVendors, connectSmartShip, getSellers } from "./src/utils/helpers";
 import hubRouter from "./src/routes/hub.routes";
 import cors from "cors";
+import customerRouter from "./src/routes/customer.routes";
 
 app.use(cors());
 app.use(express.json());
@@ -34,9 +35,11 @@ mongoose
 app.use("/auth", authRouter);
 app.post("/vendor", addVendors);
 app.get("/getsellers", getSellers);
+
 // @ts-ignore (as Request object is extended with new property seller)
 app.use(AuthMiddleware);
 
+app.use("/customer", customerRouter);
 app.use("/hub", hubRouter);
 app.use("/order", orderRouter);
 
