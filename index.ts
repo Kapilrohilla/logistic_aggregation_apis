@@ -6,7 +6,7 @@ const app = express();
 import config from "./src/utils/config";
 import orderRouter from "./src/routes/order.routes";
 import { AuthMiddleware, ErrorHandler } from "./src/utils/middleware";
-import { addVendors, connectSmartShip } from "./src/utils/helpers";
+import { addVendors, connectSmartShip, getSellers } from "./src/utils/helpers";
 import hubRouter from "./src/routes/hub.routes";
 import cors from "cors";
 
@@ -33,7 +33,7 @@ mongoose
 
 app.use("/auth", authRouter);
 app.post("/vendor", addVendors);
-
+app.get("/getsellers", getSellers);
 // @ts-ignore (as Request object is extended with new property seller)
 app.use(AuthMiddleware);
 

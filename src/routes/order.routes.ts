@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createB2COrder, getOrders, createB2BOrder } from "../controllers/order.controller";
+import { createB2COrder, getOrders, createB2BOrder, getCourier } from "../controllers/order.controller";
 
 // ts-ignore is used as contollers request type is extended with custom property seller
 
@@ -12,4 +12,7 @@ orderRouter.get("/", getOrders);
 orderRouter.post("/b2c", createB2COrder);
 
 orderRouter.post("/b2b", createB2BOrder);
+
+// @ts-ignore
+orderRouter.get("/courier/:type/:id", getCourier);
 export default orderRouter;

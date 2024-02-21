@@ -5,7 +5,7 @@ const B2COrderSchema = new mongoose.Schema({
   // isB2C: { type: Boolean, required: true },
   //  will require seller details / maybe hub details
   order_refernce_id: { type: String, required: true, unique: true },
-  pickupAddress: { type: mongoose.Schema.Types.ObjectId },
+  pickupAddress: { type: mongoose.Schema.Types.ObjectId, ref: "Hub" },
   productId: { type: mongoose.Schema.Types.ObjectId, ref: "Products" },
   shipmentValue: { type: Number, required: true },
   taxValue: { type: Number, required: true },
@@ -22,11 +22,13 @@ const B2COrderSchema = new mongoose.Schema({
   sizeUnit: { type: String, required: true },
   boxWeight: { type: Number, required: true },
   weightUnit: { type: String, required: true },
-  b2C_consigneeDetails: {
+  customerDetails: {
     name: { type: String, required: true },
     email: { type: String, required: true },
     phone: { type: String, required: true },
     address: { type: String, required: true },
+    city: { type: String, required: true },
+    state: { type: String, required: true },
     pincode: { type: String, required: true },
   },
 });
@@ -128,7 +130,17 @@ const B2BOrderSchema = new mongoose.Schema({
   shipperGST: { type: String, required: true },
   consigneeGST: { type: String, required: true },
   pickupAddress: { type: String, required: true },
-  consigneeAddress: { type: String, required: true },
+  customerDetails: {
+    name: { type: String, required: true },
+    email: { type: String, required: true },
+    phone: { type: String, required: true },
+    address: { type: String, required: true },
+    city: { type: String, required: true },
+    state: { type: String, required: true },
+    pincode: { type: String, required: true },
+    type: mongoose.Schema.Types.Mixed,
+    required: true,
+  },
 });
 
 export const B2COrderModel = mongoose.model("Orders", B2COrderSchema);

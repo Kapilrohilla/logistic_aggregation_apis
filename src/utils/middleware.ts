@@ -64,10 +64,9 @@ export const ErrorHandler = (err: any, req: Request, res: Response, next: NextFu
         message: "Invalid Id",
       });
     }
-    console.log(err);
     return res.status(200).send({
       valid: false,
-      message: "something went wrong",
+      message: err.message,
     });
   } else {
     return res.status(200).send({

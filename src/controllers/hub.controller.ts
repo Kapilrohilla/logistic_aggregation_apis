@@ -1,6 +1,7 @@
 import { Response, NextFunction } from "express";
 import type { ExtendedRequest } from "../utils/middleware";
 import HubModel from "../models/hub.model";
+import { isValidObjectId } from "mongoose";
 
 export const createHub = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
   const body = req.body;
@@ -96,4 +97,39 @@ export const getHub = async (req: ExtendedRequest, res: Response, next: NextFunc
     valid: true,
     hubs: sellerHubs,
   });
+};
+
+export const getSpecificHub = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
+  const sellerId = req.seller._id;
+  const hubId: string = req.params.id;
+  if (!isValidObjectId(sellerId)) {
+    return res.status(200).send({
+      valid: false,
+      message: "invalid sellerId",
+    });
+  }
+  if (!isValidObjectId(hubId)) {
+    return res.status(200).send({
+      valid: false,
+      message: "invalid hubId",
+    });
+  }
+
+  let specificHub;
+  try {
+    specificHub = await HubModel.findOne({ sellerId, _id: hubId }).lean();
+  } catch (err) {
+    return next(err);
+  }
+  if (specificHub === null) {
+    return res.status(200).send({
+      valid: false,
+      message: "Hub not found",
+    });
+  } else {
+    return res.status(200).send({
+      valid: true,
+      hub: specificHub,
+    });
+  }
 };

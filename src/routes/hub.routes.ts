@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createHub, getHub } from "../controllers/hub.controller";
+import { createHub, getHub, getSpecificHub } from "../controllers/hub.controller";
 
 const hubRouter = Router();
 
@@ -9,4 +9,6 @@ hubRouter.post("/", createHub);
 // @ts-ignore
 hubRouter.get("/", getHub);
 
+//@ts-ignore
+hubRouter.get("/:id", getSpecificHub);
 export default hubRouter;

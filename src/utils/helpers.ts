@@ -4,6 +4,7 @@ import EnvModel from "../models/env.model";
 import type { NextFunction, Request, Response } from "express";
 import VendorModel from "../models/vendor.model";
 import PincodeModel from "../models/pincode.model";
+import SellerModel from "../models/seller.model";
 
 export const validateEmail = (email: string) => {
   return /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)*[a-zA-Z]{2,}))$/.test(
@@ -61,6 +62,18 @@ export const addVendors = async (req: Request, res: Response, next: NextFunction
     valid: true,
     vendor: savedVendor,
   });
+};
+
+export const getSellers = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const sellers = await SellerModel.find({}, { password: 0, __v: 0 });
+    res.status(200).send({
+      valid: true,
+      sellers: sellers,
+    });
+  } catch (err) {
+    return next(err);
+  }
 };
 
 // condition timing should be in the format: "hour:minute:second"
