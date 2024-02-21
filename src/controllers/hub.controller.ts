@@ -6,6 +6,7 @@ import axios from "axios";
 import config from "../utils/config";
 import APIs from "../utils/constants/third_party_apis";
 import EnvModel from "../models/env.model";
+import { isValidPayload, validatePhone } from "../utils/helpers";
 
 export const createHub = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
   const body = req.body;
@@ -27,6 +28,7 @@ export const createHub = async (req: ExtendedRequest, res: Response, next: NextF
   let { name, city, pincode, state, address1, address2, phone } = req.body;
   pincode = Number(pincode);
   phone = Number(phone);
+
   if (
     !(
       typeof name === "string" &&
@@ -43,7 +45,12 @@ export const createHub = async (req: ExtendedRequest, res: Response, next: NextF
       message: "invalid payload type",
     });
   }
-
+  if (!validatePhone(phone)) {
+    return res.status(200).send({
+      valid: false,
+      message: "invalid phone",
+    });
+  }
   const isAlreadyExists = (await HubModel.findOne({ name, sellerId: req.seller._id }).lean()) !== null;
   // create hub using smartship api
   if (isAlreadyExists) {
@@ -181,6 +188,130 @@ export const getSpecificHub = async (req: ExtendedRequest, res: Response, next: 
   }
 };
 
+/*
+
+update-body =>
+  hub_name:string,
+  hub_phone: number,
+  pincode: string,
+  city: string,
+  state: string,
+  address1: string,
+  address2: string
+  delivery_type_id
+*/
+export const updateHub = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
+  const sellerId = req.seller._id;
+  const hubId = req.params.id;
+  const body = req.body;
+  if (!isValidPayload(body, [])) {
+    return res.status(200).send({
+      valid: false,
+      message: "invalid payload",
+    });
+  }
+  if (!isValidObjectId(sellerId)) {
+    return res.status(200).send({
+      valid: false,
+      message: "invalid sellerId",
+    });
+  }
+  if (!isValidObjectId(hubId)) {
+    return res.status(200).send({
+      valid: false,
+      message: "invalid hubId",
+    });
+  }
+  let hubData = null;
+  try {
+    hubData = await HubModel.findOne({ _id: hubId, sellerId }).lean();
+  } catch (err) {
+    return next(err);
+  }
+  if (hubData === null) return res.status(200).send({ valid: false, message: "Hub not found" });
+
+  const env = await EnvModel.findOne({}).lean();
+  if (!env) {
+    return res.status(500).send({
+      valid: false,
+      message: "Smartship ENVs not found",
+    });
+  }
+
+  const { hub_id, name, phone, pincode, city, state, address1, address2, delivery_type_id } = hubData;
+
+  const smartshipToken = env.token_type + " " + env.access_token;
+
+  const smartshipAPIconfig = { headers: { Authorization: smartshipToken } };
+
+  // const smartshipAPIBody = { hub_id, hub_name: name, hub_phone: phone, pincode, city, state, address1, address2 };
+  const smartshipAPIBody = {
+    hub_id,
+    hub_name: name,
+    hub_phone: phone,
+    pincode,
+    city,
+    state,
+    address1,
+    address2,
+    delivery_type_id,
+    ...body,
+  };
+  // hit smartship api
+  const response = await axios.post(
+    config.SMART_SHIP_API_BASEURL + APIs.HUB_UPDATE,
+    smartshipAPIBody,
+    smartshipAPIconfig
+  );
+  const smartShipResponseData: SMARTSHIP_UPDATE_DATA = response.data;
+
+  console.log(JSON.stringify(smartShipResponseData));
+
+  if (!smartShipResponseData.status) {
+    return res.status(200).send({
+      valid: false,
+      message: "Failed to update",
+    });
+  }
+  try {
+    console.log(smartshipAPIBody);
+    // TODO city, state need to mapand update
+    const updatedDocuments = await HubModel.findByIdAndUpdate(
+      hubData._id,
+      {
+        name: smartshipAPIBody.hub_name,
+        phone: smartshipAPIBody.hub_phone,
+        pincode: smartshipAPIBody.pincode,
+        address1: smartshipAPIBody.address1,
+        address2: smartshipAPIBody.address2,
+        delivery_type_id: smartshipAPIBody.delivery_type_id,
+      },
+      { new: true }
+    );
+
+    return res.status(200).send({
+      valid: true,
+      message: "Hub data updated successfully",
+      hub: updatedDocuments,
+    });
+  } catch (err) {
+    return next(err);
+  }
+
+  // return res.status(500).send({ valid: false, message: "incomplete route" });
+};
+type SMARTSHIP_UPDATE_DATA = {
+  status: number;
+  code: number;
+  message: "OK" | "success" | "invalid_inputs";
+  data: {
+    message: {
+      info: string;
+      validation_error?: String[];
+    };
+  } | null;
+  extra: null;
+};
 type SMARTSHIP_DATA = {
   status: number;
   code: number;

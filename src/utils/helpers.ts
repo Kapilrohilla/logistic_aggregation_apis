@@ -7,10 +7,14 @@ import PincodeModel from "../models/pincode.model";
 import SellerModel from "../models/seller.model";
 import { ExtendedRequest } from "./middleware";
 
-export const validateEmail = (email: string) => {
+export const validateEmail = (email: string): boolean => {
   return /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)*[a-zA-Z]{2,}))$/.test(
     email
   );
+};
+
+export const validatePhone = (phone: number): boolean => {
+  return phone > 999999999;
 };
 
 export const connectSmartShip = () => {
