@@ -12,6 +12,7 @@ import cors from "cors";
 import customerRouter from "./src/routes/customer.routes";
 import morgan from "morgan";
 import shipmentRouter from "./src/routes/shipment.routes";
+import sellerRouter from "./src/routes/seller.routes";
 
 app.use(cors());
 
@@ -45,8 +46,10 @@ app.get("/getsellers", getSellers);
 
 // @ts-ignore (as Request object is extended with new property seller)
 app.use(AuthMiddleware);
+
 //@ts-ignore
 app.post("/ratecalculator", ratecalculatorController);
+app.use("/seller", sellerRouter);
 app.use("/customer", customerRouter);
 app.use("/hub", hubRouter);
 app.use("/order", orderRouter);

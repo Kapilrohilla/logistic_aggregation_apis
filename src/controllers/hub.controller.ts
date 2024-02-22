@@ -190,6 +190,7 @@ export const getSpecificHub = async (req: ExtendedRequest, res: Response, next: 
   }
 };
 
+// FIXME fix update hub when smartship isnt' login
 /*
 
 update-body =>
@@ -264,6 +265,7 @@ export const updateHub = async (req: ExtendedRequest, res: Response, next: NextF
     delivery_type_id,
     ...body,
   };
+
   // hit smartship api
   const response = await axios.post(
     config.SMART_SHIP_API_BASEURL + APIs.HUB_UPDATE,

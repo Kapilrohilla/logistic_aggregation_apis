@@ -11,8 +11,6 @@ type SignupBodyType = { email: any; password: any; name: any };
 export const signup = async (req: Request, res: Response, next: NextFunction) => {
   const body: SignupBodyType = req.body;
 
-  // console.log(body, " signup body");
-
   if (!(body?.password && body?.email && body.name)) {
     return res.status(200).send({
       valid: false,
@@ -52,9 +50,6 @@ export const signup = async (req: Request, res: Response, next: NextFunction) =>
     return acc.concat(cv._id);
   }, []);
 
-  // return res.send({
-  //   vendorsId,
-  // });
   const user = new SellerModel({ name: body?.name, email: body?.email, password: hashPassword, vendors: vendorsId });
 
   let savedUser;
