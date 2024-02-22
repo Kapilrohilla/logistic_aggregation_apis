@@ -41,7 +41,7 @@ export const AuthMiddleware = async (req: ExtendedRequest, res: Response, next: 
   }
 
   const seller = await SellerModel.findOne({ email: sellerEmail }).lean();
-
+  if (!seller) return res.status(200).send({ valid: false, message: "Seller no more exists" });
   req.seller = seller;
   next();
 };
