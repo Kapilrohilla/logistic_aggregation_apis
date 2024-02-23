@@ -6,6 +6,7 @@ import VendorModel from "../models/vendor.model";
 import PincodeModel from "../models/pincode.model";
 import SellerModel from "../models/seller.model";
 import { ExtendedRequest } from "./middleware";
+import APIs from "./constants/third_party_apis";
 
 export const validateEmail = (email: string): boolean => {
   return /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)*[a-zA-Z]{2,}))$/.test(
@@ -15,6 +16,49 @@ export const validateEmail = (email: string): boolean => {
 
 export const validatePhone = (phone: number): boolean => {
   return phone > 999999999;
+};
+
+// TODO implement
+export const validateSmartShipServicablity = async (
+  orderType: 0 | 1,
+  hub_id: number,
+  destinationPinode: number,
+  orderWeight: number,
+  prefferredCarrier: number[]
+): Promise<boolean> => {
+  const requestBody: any = {
+    order_info: {
+      hub_ids: [hub_id],
+      destination_pincode: destinationPinode,
+      orderWeight: orderWeight,
+      preferred_carriers: [...prefferredCarrier],
+    },
+    request_info: { extra_info: true, cost_info: false },
+  };
+  if (orderType) {
+    // 1/ true for forward 0 for reverse
+    requestBody.order_info.destination_pincode = destinationPinode;
+  } else {
+    requestBody.source_pincode = destinationPinode;
+  }
+  const env = await EnvModel.findOne({}).lean();
+  if (env === null) return false;
+  const smartshipToken = env.token_type + " " + env.access_token;
+  const smartshipAPIconfig = { headers: { Authorization: smartshipToken } };
+  try {
+    const response = await axios.post(
+      config.SMART_SHIP_API_BASEURL + APIs.HUB_SERVICEABILITY,
+      requestBody,
+      smartshipAPIconfig
+    );
+    const responseData = response.data;
+    return responseData.data.serviceability_status;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+
+  return false;
 };
 
 export const connectSmartShip = () => {

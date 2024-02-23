@@ -1,10 +1,10 @@
-import { Request, Response, NextFunction, query } from "express";
+import { Request, Response, NextFunction, query, response } from "express";
 import type { ExtendedRequest } from "../utils/middleware";
 import { B2COrderModel, B2BOrderModel } from "../models/order.model";
 import ProductModel from "../models/product.model";
 import HubModel from "../models/hub.model";
 import VendorModel from "../models/vendor.model";
-import { MetroCitys, NorthEastStates, getPincodeDetails } from "../utils/helpers";
+import { MetroCitys, NorthEastStates, getPincodeDetails, validateSmartShipServicablity } from "../utils/helpers";
 import { isValidObjectId } from "mongoose";
 // import ConsigneeModel from "customer_details../models/consignee.model";
 
@@ -34,10 +34,50 @@ export const createB2COrder = async (req: ExtendedRequest, res: Response, next: 
       message: "Pickup address is required",
     });
   }
+
+  const customerDetails = body?.customer_details;
+  if (
+    !(
+      customerDetails.name &&
+      customerDetails.email &&
+      customerDetails.phone &&
+      customerDetails.address &&
+      customerDetails.city &&
+      customerDetails.state &&
+      customerDetails.pincode
+    )
+  ) {
+    return res.status(200).send({
+      valid: false,
+      message: "customer details: name, email, phone, address, city, state are required",
+    });
+  }
+
   try {
-    const doesItExists = (await HubModel.findById(body?.pickupAddress)) !== null;
-    if (!doesItExists) {
+    const hubDetails = await HubModel.findById(body?.pickupAddress);
+
+    if (hubDetails === null) {
       return res.status(200).send({ valid: false, message: "pickup address doesn't exists as hub" });
+    }
+    if (!hubDetails.hub_id) {
+      return res.status(200).send({
+        valid: false,
+        message: "Pickupaddress hub_id (thus: not servicable)",
+      });
+    }
+    const isServicable = await validateSmartShipServicablity(
+      1,
+      hubDetails.hub_id,
+      Number(customerDetails.pincode),
+      0,
+      []
+    );
+
+    if (!isServicable) {
+      return res.status(200).send({
+        valid: false,
+        message: "not servicable",
+      });
     }
   } catch (err) {
     return next(err);
@@ -60,10 +100,7 @@ export const createB2COrder = async (req: ExtendedRequest, res: Response, next: 
       typeof quantity === "number"
     )
   ) {
-    return res.status(200).send({
-      valid: false,
-      message: "Invalid payload type",
-    });
+    return res.status(200).send({ valid: false, message: "Invalid payload type" });
   }
 
   const product2save = new ProductModel({
@@ -79,25 +116,9 @@ export const createB2COrder = async (req: ExtendedRequest, res: Response, next: 
   } catch (err) {
     return next(err);
   }
-  const customerDetails = body?.customer_details;
-  if (
-    !(
-      customerDetails.name &&
-      customerDetails.email &&
-      customerDetails.phone &&
-      customerDetails.address &&
-      customerDetails.city &&
-      customerDetails.state &&
-      customerDetails.pincode
-    )
-  ) {
-    return res.status(200).send({
-      valid: false,
-      message: "customer details: name, email, phone, address, city, state are required",
-    });
-  }
-  // product validation and saving to end here...
 
+  // product validation and saving to end here...
+  // const isServicable = await validateSmartShipServicablity(1);
   const order2save = new B2COrderModel({
     ...body,
     isB2C: true,

@@ -6,7 +6,7 @@ const B2COrderSchema = new mongoose.Schema({
   //  will require seller details / maybe hub details
   order_refernce_id: { type: String, required: true, unique: true },
   pickupAddress: { type: mongoose.Schema.Types.ObjectId, ref: "Hub" },
-  productId: { type: mongoose.Schema.Types.ObjectId, ref: "Products" },
+  productId: { type: mongoose.Schema.Types.ObjectId, ref: "Products", required: true },
   shipmentValue: { type: Number, required: true },
   taxValue: { type: Number, required: true },
   totalValue: { type: Number, required: true },
@@ -30,6 +30,8 @@ const B2COrderSchema = new mongoose.Schema({
     city: { type: String, required: true },
     state: { type: String, required: true },
     pincode: { type: String, required: true },
+    type: mongoose.Schema.Types.Map,
+    required: true,
   },
 });
 
