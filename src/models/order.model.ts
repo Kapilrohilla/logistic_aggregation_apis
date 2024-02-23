@@ -8,7 +8,7 @@ const B2COrderSchema = new mongoose.Schema({
   pickupAddress: { type: mongoose.Schema.Types.ObjectId, ref: "Hub" },
   productId: { type: mongoose.Schema.Types.ObjectId, ref: "Products", required: true },
   shipmentValue: { type: Number, required: true },
-  taxValue: { type: Number, required: true },
+  productTaxRate: { type: Number, required: true, min: 0, max: 100 },
   totalValue: { type: Number, required: true },
   isContainFragileItem: { type: Boolean, required: true },
   invoiceNumber: { type: String, required: true },

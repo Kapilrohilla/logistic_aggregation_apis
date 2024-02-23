@@ -18,7 +18,6 @@ export const validatePhone = (phone: number): boolean => {
   return phone > 999999999;
 };
 
-// TODO implement
 export const validateSmartShipServicablity = async (
   orderType: 0 | 1,
   hub_id: number,

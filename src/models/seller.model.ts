@@ -4,7 +4,7 @@ const sellerSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true },
   password: { type: String, required: true },
-  wallerBalance: { type: Number, default: 0, min: 0 },
+  walletBalance: { type: Number, default: 0, min: 0 },
   companyName: { type: String, required: false },
   entityType: { type: String, required: false },
   address: { type: String, required: false },
