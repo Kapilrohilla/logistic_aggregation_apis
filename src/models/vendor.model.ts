@@ -29,6 +29,7 @@ const vendorSchema = new mongoose.Schema(
       basePrice: { type: Number, required: true, min: 0 },
       incrementPrice: { type: Number, required: true, min: 0 },
     },
+    smartship_carrier_id: { type: Number, required: true },
   },
   { timestamps: true }
 );

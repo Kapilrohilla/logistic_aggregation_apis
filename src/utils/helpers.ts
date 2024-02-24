@@ -212,6 +212,7 @@ export const ratecalculatorController = async (req: ExtendedRequest, res: Respon
       // north east
       increment_price = cv.northEast;
     } else {
+      console.log("roi");
       // rest of india
       increment_price = cv.withinRoi;
     }
@@ -270,5 +271,21 @@ export const getPincodeDetails = async (Pincode: number) => {
   return picodeDetails;
 };
 
-export const MetroCitys = ["Delhi", "Mumbai", "Kolkata", "Hyderabad", "Chennai", "Bangalore", "Ahmedabad"];
-export const NorthEastStates = ["Arunachal Pradesh", "Assam", "Manipur", "Meghalya", "Mizoram", "Nagaland", "Tripura"];
+export const MetroCitys = [
+  "New Delhi",
+  "MUMBAI",
+  "Pune",
+  "GURGAON",
+  "KOLKATA",
+  "Kolkata",
+  "HYDERABAD",
+  "Hyderabad",
+  "CHENNAI",
+  "Chennai",
+  "Bangalore",
+  "BENGALURU RURAL",
+  "BENGALURU",
+  "Ahmedabad City",
+  "Ahmedabad",
+];
+export const NorthEastStates = ["Sikkim", "Mizoram", "Manipur", "Assam", "Megalaya", "Nagaland", "Tripura"];

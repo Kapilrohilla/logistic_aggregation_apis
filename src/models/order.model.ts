@@ -4,12 +4,12 @@ const B2COrderSchema = new mongoose.Schema({
   sellerId: { type: mongoose.Schema.Types.ObjectId, ref: "Seller", required: true },
   // isB2C: { type: Boolean, required: true },
   //  will require seller details / maybe hub details
+  orderStage: { type: Number, default: 0 }, // 0 - no shipped, 1 -shipped
   order_refernce_id: { type: String, required: true, unique: true },
   pickupAddress: { type: mongoose.Schema.Types.ObjectId, ref: "Hub" },
   productId: { type: mongoose.Schema.Types.ObjectId, ref: "Products", required: true },
   shipmentValue: { type: Number, required: true },
   productTaxRate: { type: Number, required: true, min: 0, max: 100 },
-  totalValue: { type: Number, required: true },
   isContainFragileItem: { type: Boolean, required: true },
   invoiceNumber: { type: String, required: true },
   invoiceDate: { type: String, required: true },
@@ -22,6 +22,7 @@ const B2COrderSchema = new mongoose.Schema({
   sizeUnit: { type: String, required: true },
   boxWeight: { type: Number, required: true },
   weightUnit: { type: String, required: true },
+  ewaybill: { type: String, required: false },
   customerDetails: {
     name: { type: String, required: true },
     email: { type: String, required: true },

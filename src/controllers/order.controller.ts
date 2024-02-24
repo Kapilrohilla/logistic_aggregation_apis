@@ -6,7 +6,6 @@ import HubModel from "../models/hub.model";
 import VendorModel from "../models/vendor.model";
 import { MetroCitys, NorthEastStates, getPincodeDetails, validateSmartShipServicablity } from "../utils/helpers";
 import { isValidObjectId } from "mongoose";
-// import ConsigneeModel from "customer_details../models/consignee.model";
 
 export const createB2COrder = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
   const body = req.body;
@@ -221,7 +220,6 @@ export const getCourier = async (req: ExtendedRequest, res: Response, next: Next
   const seller = req.seller;
   const productId = req.params.id;
   const type = req.params.type;
-
   let orderDetails: any;
   if (type === "b2c") {
     try {
@@ -261,7 +259,6 @@ export const getCourier = async (req: ExtendedRequest, res: Response, next: Next
 
   // @ts-ignore
   let pickupAddress: PickupAddress = orderDetails?.pickupAddress;
-  console.log(pickupAddress);
   // @ts-ignore
   const customerDetails = orderDetails.customerDetails;
   const margin = seller.margin || 100;
@@ -269,6 +266,7 @@ export const getCourier = async (req: ExtendedRequest, res: Response, next: Next
 
   let vendorsDetails;
   try {
+    console.warn("working");
     let queryCondition = vendors.map((id: string) => {
       return { _id: id };
     });
@@ -287,9 +285,12 @@ export const getCourier = async (req: ExtendedRequest, res: Response, next: Next
       message: "Invalid vendor",
     });
   }
-
   const pickupPinCode = pickupAddress.pincode;
-  const deliveryPincode = customerDetails.pincode;
+  const deliveryPincode = Number(customerDetails.get("pincode"));
+
+  console.log("pickup:- ", pickupPinCode);
+  console.log("delivery:- ", deliveryPincode);
+
   const pickupPinCodeDetails = await getPincodeDetails(Number(pickupPinCode));
   const deliveryPinCodeDetails = await getPincodeDetails(Number(deliveryPincode));
   if (!pickupPinCodeDetails || !deliveryPinCodeDetails) {
@@ -361,6 +362,7 @@ export const getCourier = async (req: ExtendedRequest, res: Response, next: Next
       type: cv.type,
       expectedPickup,
       orderWeight,
+      smartship_carrier_id: cv.smartship_carrier_id,
       // orderDetails: {
       //   totalValue: orderDetails?.totalValue,
       //   shipmentValue: orderDetails?.shipmentValue,
