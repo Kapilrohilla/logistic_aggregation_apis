@@ -34,6 +34,7 @@ export const validateSmartShipServicablity = async (
     },
     request_info: { extra_info: true, cost_info: false },
   };
+  console.log(hub_id, destinationPinode);
   if (orderType) {
     // 1/ true for forward 0 for reverse
     requestBody.order_info.destination_pincode = destinationPinode;
@@ -269,6 +270,19 @@ export const getNextDateWithDesiredTiming = (timing: string): Date => {
 export const getPincodeDetails = async (Pincode: number) => {
   const picodeDetails = await PincodeModel.findOne({ Pincode }).lean();
   return picodeDetails;
+};
+
+export const validateStringDate = (date: string): boolean => {
+  const splittedDate = date.split("-");
+  const splittedDateCount = splittedDate.length;
+
+  if (splittedDateCount !== 3) {
+    return false;
+  }
+  if (splittedDate[0].length !== 2 || splittedDate[1].length !== 2 || splittedDate[2].length !== 4) {
+    return false;
+  }
+  return true;
 };
 
 export const MetroCitys = [

@@ -74,12 +74,16 @@ export async function createShipment(req: ExtendedRequest, res: Response, next: 
     invoiceDate,
     invoiceNumber,
     customerDetails,
+    amountToCollect,
   } = order;
   const { pickupAddress } = order;
 
-  const orderTotalValue = shipmentValue * (productTaxRate / 100);
+  const orderTotalValue = shipmentValue + shipmentValue * (productTaxRate / 100);
   //@ts-ignore
   const hubId = pickupAddress?.hub_id;
+  console.log("shipment");
+  console.log(shipmentValue);
+  console.log("shipment");
 
   boxWeight = Number(boxWeight);
   boxLength = Number(boxLength);
@@ -105,20 +109,23 @@ export async function createShipment(req: ExtendedRequest, res: Response, next: 
     orders: [
       {
         client_order_reference_id: order_refernce_id,
-        order_collectable_amount: 0, // need to take  from user in future
+        order_collectable_amount: amountToCollect, // need to take  from user in future
         total_order_value: orderTotalValue,
-        payment_type: paymentMode,
-        package_order_weight: orderWeight,
-        package_order_length: boxLength,
-        package_order_height: boxHeight,
-        package_order_width: boxWidth,
+        payment_type: paymentMode ? "cod" : "prepaid",
+        // package_order_weight: orderWeight,
+        // package_order_length: boxLength,
+        // package_order_height: boxHeight,
+        package_order_weight: 1.5,
+        package_order_length: 10,
+        package_order_width: 10,
+        package_order_height: 20,
         shipper_hub_id: hubId,
         shipper_gst_no: req.seller.gstno,
         order_invoice_date: invoiceDate, // not mandatory
         order_invoice_number: invoiceNumber, // not mandatory
         order_meta: {
           // not mandatory
-          preferred_carriers: [carrierId], // TODO: replace this preferred_carriers (0) with actual values // 279 blue-dart
+          preferred_carriers: [carrierId],
         },
         product_details: [
           {
@@ -129,9 +136,9 @@ export async function createShipment(req: ExtendedRequest, res: Response, next: 
             product_category: productDetails.category,
             product_hsn_code: productDetails?.hsn_code, // appear to be mandantory
             product_quantity: productDetails?.quantity,
-            product_invoice_value: 0, //productDetails?.invoice_value, // invoice value
-            product_taxable_value: productTaxableValue,
-            product_gst_tax_rate: 0,
+            product_invoice_value: orderTotalValue, //productDetails?.invoice_value, // invoice value
+            product_taxable_value: shipmentValue,
+            product_gst_tax_rate: 18,
             product_sgst_amount: 0,
             product_sgst_tax_rate: 0,
             product_cgst_amount: 0,
@@ -151,6 +158,9 @@ export async function createShipment(req: ExtendedRequest, res: Response, next: 
   // return res.sendStatus(500);
   const shipmentAPIConfig = { headers: { Authorization: smartshipToken } };
   // /*
+  console.log("shipment api body");
+  console.log(JSON.stringify(shipmentAPIBody));
+  console.log("shipment api body");
   try {
     const response = await axios.post(
       config.SMART_SHIP_API_BASEURL + APIs.CREATE_SHIPMENT,
@@ -160,7 +170,7 @@ export async function createShipment(req: ExtendedRequest, res: Response, next: 
 
     const responseData = response.data;
     console.log(JSON.stringify(responseData));
-    if (responseData?.data?.total_success_orders) {
+    if (!responseData?.data?.total_success_orders) {
       return res.status(200).send({ valid: false, message: "order failed to create" });
     }
 

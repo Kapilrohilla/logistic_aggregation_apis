@@ -4,7 +4,13 @@ import { B2COrderModel, B2BOrderModel } from "../models/order.model";
 import ProductModel from "../models/product.model";
 import HubModel from "../models/hub.model";
 import VendorModel from "../models/vendor.model";
-import { MetroCitys, NorthEastStates, getPincodeDetails, validateSmartShipServicablity } from "../utils/helpers";
+import {
+  MetroCitys,
+  NorthEastStates,
+  getPincodeDetails,
+  validateSmartShipServicablity,
+  validateStringDate,
+} from "../utils/helpers";
 import { isValidObjectId } from "mongoose";
 
 export const createB2COrder = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
@@ -19,10 +25,26 @@ export const createB2COrder = async (req: ExtendedRequest, res: Response, next: 
     });
   }
 
-  if (!body?.customer_details) {
+  const customerDetails = body?.customerDetails;
+  if (!customerDetails) {
     return res.status(200).send({
       valid: false,
       message: "customer details required",
+    });
+  }
+
+  if (
+    !(
+      customerDetails?.name &&
+      customerDetails?.email &&
+      customerDetails?.phone &&
+      customerDetails?.address &&
+      customerDetails?.pincode
+    )
+  ) {
+    return res.status(200).send({
+      valid: false,
+      message: "customer details: name, email, phone, address are required",
     });
   }
 
@@ -34,36 +56,47 @@ export const createB2COrder = async (req: ExtendedRequest, res: Response, next: 
     });
   }
 
-  const customerDetails = body?.customer_details;
-  if (
-    !(
-      customerDetails.name &&
-      customerDetails.email &&
-      customerDetails.phone &&
-      customerDetails.address &&
-      customerDetails.city &&
-      customerDetails.state &&
-      customerDetails.pincode
-    )
-  ) {
+  const paymentMode = body?.paymentMode;
+  if (paymentMode !== 0 && paymentMode !== 1)
+    return res.status(200).send({ valid: false, message: "Invalid payment mode." });
+
+  if (paymentMode === 1) {
+    if (!body?.amountToCollect) {
+      return res.status(200).send({ valid: false, message: "amountToCollect must be defined for cod orders." });
+    }
+  }
+  if (paymentMode === 0) {
+    return res.status(200).send({ valid: false, message: "Prepaid not supported." });
+  }
+  const invoiceDate = body?.invoiceDate;
+  if (!invoiceDate) {
     return res.status(200).send({
       valid: false,
-      message: "customer details: name, email, phone, address, city, state are required",
+      message: "Invoice date is requried",
     });
+  }
+  const isValidDate = validateStringDate(invoiceDate);
+  if (!isValidDate) {
+    return res.status(200).send({ valid: false, message: "invalid invoice date" });
+  }
+  const totalOrderPrice = body?.shipmentValue + (body?.productTaxRate / 100) * body?.shipmentValue;
+  if (totalOrderPrice > 50000) {
+    return res.status(200).send({ valid: false, message: "ewaybill is required for order worth more than 50,000" });
   }
 
   try {
     const hubDetails = await HubModel.findById(body?.pickupAddress);
 
-    if (hubDetails === null) {
+    if (!hubDetails) {
       return res.status(200).send({ valid: false, message: "pickup address doesn't exists as hub" });
     }
     if (!hubDetails.hub_id) {
       return res.status(200).send({
         valid: false,
-        message: "Pickupaddress hub_id (thus: not servicable)",
+        message: "Pickupaddress hub_id not available (thus: not servicable)",
       });
     }
+
     const isServicable = await validateSmartShipServicablity(
       1,
       hubDetails.hub_id,
@@ -81,7 +114,6 @@ export const createB2COrder = async (req: ExtendedRequest, res: Response, next: 
   } catch (err) {
     return next(err);
   }
-  // validating picup address end
 
   // product validation and saving to db start here...
   if (!body?.productDetails) {
@@ -386,6 +418,16 @@ export const getCourier = async (req: ExtendedRequest, res: Response, next: Next
     valid: true,
     courierPartner: data2send,
   });
+};
+export const getSpecificOrder = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
+  const orderId = req.params?.id;
+  if (!isValidObjectId(orderId)) {
+    return res.status(200).send({ valid: false, message: "Invalid orderId" });
+  }
+  //@ts-ignore
+  const order = await B2COrderModel.findOne({ _id: orderId, sellerId: req.seller?._id }).lean();
+
+  return res.status(200).send({ valid: true, order: order });
 };
 
 type PickupAddress = {

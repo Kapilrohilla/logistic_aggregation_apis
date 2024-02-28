@@ -13,7 +13,7 @@ const B2COrderSchema = new mongoose.Schema({
   isContainFragileItem: { type: Boolean, required: true },
   invoiceNumber: { type: String, required: true },
   invoiceDate: { type: String, required: true },
-  paymentMode: { type: String, required: true },
+  paymentMode: { type: String, required: true }, // 1 = COD, 0 = prepaid
   numberOfBox: { type: Number, required: true },
   packageType: { type: String, required: true },
   boxLength: { type: Number, required: true },
@@ -23,6 +23,7 @@ const B2COrderSchema = new mongoose.Schema({
   boxWeight: { type: Number, required: true },
   weightUnit: { type: String, required: true },
   ewaybill: { type: String, required: false },
+  amountToCollect: { type: Number, required: false, default: 0 },
   customerDetails: {
     name: { type: String, required: true },
     email: { type: String, required: true },
