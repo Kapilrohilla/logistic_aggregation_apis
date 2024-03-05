@@ -8,169 +8,302 @@ import {
   MetroCitys,
   NorthEastStates,
   getPincodeDetails,
+  isValidPayload,
   validateSmartShipServicablity,
   validateStringDate,
 } from "../utils/helpers";
 import { isValidObjectId } from "mongoose";
 
+// export const createB2COrder = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
+//   const body = req.body;
+//   // "const { isB2C } = body;
+
+//   const isAlreadyExists = (await B2COrderModel.findOne({ order_refernce_id: body?.order_refernce_id }).lean()) !== null;
+//   if (isAlreadyExists) {
+//     return res.status(200).send({
+//       valid: true,
+//       message: `order exists with ${body?.order_refernce_id} order_reference_id`,
+//     });
+//   }
+
+//   const customerDetails = body?.customerDetails;
+//   if (!customerDetails) {
+//     return res.status(200).send({
+//       valid: false,
+//       message: "customer details required",
+//     });
+//   }
+
+//   if (
+//     !(
+//       customerDetails?.name &&
+//       customerDetails?.email &&
+//       customerDetails?.phone &&
+//       customerDetails?.address &&
+//       customerDetails?.pincode
+//     )
+//   ) {
+//     return res.status(200).send({
+//       valid: false,
+//       message: "customer details: name, email, phone, address are required",
+//     });
+//   }
+
+//   // validating picup address start
+//   if (!body?.pickupAddress) {
+//     return res.status(200).send({
+//       valid: false,
+//       message: "Pickup address is required",
+//     });
+//   }
+
+//   const paymentMode = body?.paymentMode;
+//   if (paymentMode !== 0 && paymentMode !== 1)
+//     return res.status(200).send({ valid: false, message: "Invalid payment mode." });
+
+//   if (paymentMode === 1) {
+//     if (!body?.amountToCollect) {
+//       return res.status(200).send({ valid: false, message: "amountToCollect must be defined for cod orders." });
+//     }
+//   }
+//   if (paymentMode === 0) {
+//     return res.status(200).send({ valid: false, message: "Prepaid not supported." });
+//   }
+//   const invoiceDate = body?.invoiceDate;
+//   if (!invoiceDate) {
+//     return res.status(200).send({
+//       valid: false,
+//       message: "Invoice date is requried",
+//     });
+//   }
+//   const isValidDate = validateStringDate(invoiceDate);
+//   if (!isValidDate) {
+//     return res.status(200).send({ valid: false, message: "invalid invoice date" });
+//   }
+//   const totalOrderPrice = body?.shipmentValue + (body?.productTaxRate / 100) * body?.shipmentValue;
+//   if (totalOrderPrice > 50000) {
+//     return res.status(200).send({ valid: false, message: "ewaybill is required for order worth more than 50,000" });
+//   }
+
+//   try {
+//     const hubDetails = await HubModel.findById(body?.pickupAddress);
+
+//     if (!hubDetails) {
+//       return res.status(200).send({ valid: false, message: "pickup address doesn't exists as hub" });
+//     }
+//     if (!hubDetails.hub_id) {
+//       return res.status(200).send({
+//         valid: false,
+//         message: "Pickupaddress hub_id not available (thus: not servicable)",
+//       });
+//     }
+
+//     const isServicable = await validateSmartShipServicablity(
+//       1,
+//       hubDetails.hub_id,
+//       Number(customerDetails.pincode),
+//       0,
+//       []
+//     );
+
+//     if (!isServicable) {
+//       return res.status(200).send({
+//         valid: false,
+//         message: "not servicable",
+//       });
+//     }
+//   } catch (err) {
+//     return next(err);
+//   }
+
+//   // product validation and saving to db start here...
+//   if (!body?.productDetails) {
+//     return res.status(200).send({
+//       valid: false,
+//       message: "Product details are required",
+//     });
+//   }
+//   const { name, category, hsn_code, quantity } = body.productDetails;
+//   if (
+//     !(
+//       typeof name === "string" ||
+//       typeof category === "string" ||
+//       typeof hsn_code === "string" ||
+//       typeof quantity === "number"
+//     )
+//   ) {
+//     return res.status(200).send({ valid: false, message: "Invalid payload type" });
+//   }
+
+//   const product2save = new ProductModel({
+//     name: name,
+//     category: category,
+//     hsn_code: hsn_code,
+//     quantity: quantity,
+//   });
+//   let savedProduct;
+
+//   try {
+//     savedProduct = await product2save.save();
+//   } catch (err) {
+//     return next(err);
+//   }
+
+//   // product validation and saving to end here...
+//   // const isServicable = await validateSmartShipServicablity(1);
+//   const order2save = new B2COrderModel({
+//     ...body,
+//     isB2C: true,
+//     sellerId: req.seller._id,
+//     productId: savedProduct._id,
+//     pickupAddress: body?.pickupAddress,
+//     customerDetails: customerDetails,
+//   });
+
+//   let savedOrder;
+//   try {
+//     const order = new B2COrderModel(order2save);
+//     savedOrder = await (await order.save()).populate("productId");
+//   } catch (err) {
+//     return next(err);
+//   }
+
+//   return res.status(200).json({
+//     valid: true,
+//     order: savedOrder,
+//   });
+// };
+
 export const createB2COrder = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
   const body = req.body;
-  // "const { isB2C } = body;
-
-  const isAlreadyExists = (await B2COrderModel.findOne({ order_refernce_id: body?.order_refernce_id }).lean()) !== null;
-  if (isAlreadyExists) {
-    return res.status(200).send({
-      valid: true,
-      message: `order exists with ${body?.order_refernce_id} order_reference_id`,
-    });
-  }
+  if (!body) return res.status(200).send({ valid: false, message: "Invalid payload" });
 
   const customerDetails = body?.customerDetails;
-  if (!customerDetails) {
-    return res.status(200).send({
-      valid: false,
-      message: "customer details required",
-    });
-  }
+  const productDetails = body?.productDetails;
 
   if (
-    !(
-      customerDetails?.name &&
-      customerDetails?.email &&
-      customerDetails?.phone &&
-      customerDetails?.address &&
-      customerDetails?.pincode
-    )
-  ) {
-    return res.status(200).send({
-      valid: false,
-      message: "customer details: name, email, phone, address are required",
-    });
-  }
+    !isValidPayload(body, [
+      "order_reference_id",
+      "total_order_value",
+      "payment_mode",
+      "customerDetails",
+      "productDetails",
+      "pickupAddress",
+    ])
+  )
+    return res.status(200).send({ valid: false, message: "Invalid payload" });
 
-  // validating picup address start
-  if (!body?.pickupAddress) {
-    return res.status(200).send({
-      valid: false,
-      message: "Pickup address is required",
-    });
-  }
+  if (!isValidPayload(productDetails, ["name", "category", "hsn_code", "quantity", "taxRate", "taxableValue"]))
+    return res.status(200).send({ valid: false, message: "Invalid payload: productDetails" });
+  if (!isValidPayload(customerDetails, ["name", "email", "phone", "address", "pincode"]))
+    return res.status(200).send({ valid: false, message: "Invalid payload: customerDetails" });
+  if (!isValidObjectId(body.pickupAddress))
+    return res.status(200).send({ valid: false, message: "Invalid pickupAddress" });
 
-  const paymentMode = body?.paymentMode;
-  if (paymentMode !== 0 && paymentMode !== 1)
-    return res.status(200).send({ valid: false, message: "Invalid payment mode." });
-
-  if (paymentMode === 1) {
-    if (!body?.amountToCollect) {
-      return res.status(200).send({ valid: false, message: "amountToCollect must be defined for cod orders." });
+  if (!(body.payment_mode === 0 || body.payment_mode === 1))
+    return res.status(200).send({ valid: false, message: "Invalid payment mode" });
+  if (body.payment_mode === 1) {
+    if (!body?.amount2Collect) {
+      return res.status(200).send({ valid: false, message: "amount2Collect > 0 for COD order" });
     }
   }
-  if (paymentMode === 0) {
-    return res.status(200).send({ valid: false, message: "Prepaid not supported." });
-  }
-  const invoiceDate = body?.invoiceDate;
-  if (!invoiceDate) {
-    return res.status(200).send({
-      valid: false,
-      message: "Invoice date is requried",
-    });
-  }
-  const isValidDate = validateStringDate(invoiceDate);
-  if (!isValidDate) {
-    return res.status(200).send({ valid: false, message: "invalid invoice date" });
-  }
-  const totalOrderPrice = body?.shipmentValue + (body?.productTaxRate / 100) * body?.shipmentValue;
-  if (totalOrderPrice > 50000) {
-    return res.status(200).send({ valid: false, message: "ewaybill is required for order worth more than 50,000" });
+  if (body.total_order_value > 50000) {
+    if (!isValidPayload(body, ["ewaybill"]))
+      return res.status(200).send({ valid: false, message: "Ewaybill required." });
   }
 
   try {
-    const hubDetails = await HubModel.findById(body?.pickupAddress);
+    const orderWithOrderReferenceId = await B2COrderModel.findOne({
+      sellerId: req.seller._id,
+      order_reference_id: body?.order_reference_id,
+    }).lean();
 
-    if (!hubDetails) {
-      return res.status(200).send({ valid: false, message: "pickup address doesn't exists as hub" });
+    if (orderWithOrderReferenceId) {
+      const newError = new Error("Order reference Id already exists.");
+      return next(newError);
     }
-    if (!hubDetails.hub_id) {
-      return res.status(200).send({
-        valid: false,
-        message: "Pickupaddress hub_id not available (thus: not servicable)",
-      });
-    }
+  } catch (err) {
+    return next(err);
+  }
 
+  let hubDetails;
+  try {
+    hubDetails = await HubModel.findById(body?.pickupAddress);
+    if (!hubDetails) return res.status(200).send({ valid: false, message: "Pickup address doesn't exists" });
+
+    if (!hubDetails.hub_id)
+      res.status(200).send({ valid: false, message: "Pickup address is not regiestered at smartship" });
+  } catch (err) {
+    return next(err);
+  }
+
+  try {
     const isServicable = await validateSmartShipServicablity(
       1,
+      // @ts-ignore
       hubDetails.hub_id,
       Number(customerDetails.pincode),
       0,
       []
     );
-
-    if (!isServicable) {
-      return res.status(200).send({
-        valid: false,
-        message: "not servicable",
-      });
-    }
+    if (!isServicable) return res.status(200).send({ valid: false, message: "Not servicable" });
   } catch (err) {
     return next(err);
   }
 
-  // product validation and saving to db start here...
-  if (!body?.productDetails) {
-    return res.status(200).send({
-      valid: false,
-      message: "Product details are required",
-    });
-  }
-  const { name, category, hsn_code, quantity } = body.productDetails;
-  if (
-    !(
-      typeof name === "string" ||
-      typeof category === "string" ||
-      typeof hsn_code === "string" ||
-      typeof quantity === "number"
-    )
-  ) {
-    return res.status(200).send({ valid: false, message: "Invalid payload type" });
-  }
-
-  const product2save = new ProductModel({
-    name: name,
-    category: category,
-    hsn_code: hsn_code,
-    quantity: quantity,
-  });
   let savedProduct;
-
   try {
+    const { name, category, hsn_code, quantity, taxRate, taxableValue } = productDetails;
+    const product2save = new ProductModel({
+      name,
+      category,
+      hsn_code,
+      quantity,
+      tax_rate: taxRate,
+      taxable_value: taxableValue,
+    });
     savedProduct = await product2save.save();
   } catch (err) {
     return next(err);
   }
+  const orderboxUnit = "kg";
 
-  // product validation and saving to end here...
-  // const isServicable = await validateSmartShipServicablity(1);
-  const order2save = new B2COrderModel({
-    ...body,
-    isB2C: true,
-    sellerId: req.seller._id,
-    productId: savedProduct._id,
-    pickupAddress: body?.pickupAddress,
-    customerDetails: customerDetails,
-  });
+  const orderboxSize = "cm";
 
   let savedOrder;
   try {
-    const order = new B2COrderModel(order2save);
-    savedOrder = await (await order.save()).populate("productId");
+    const data = {
+      sellerId: req.seller?._id,
+      orderStage: 0,
+      pickupAddress: body?.pickupAddress,
+      productId: savedProduct._id,
+      order_reference_id: body?.order_reference_id,
+      total_order_value: body?.total_order_value,
+      payment_mode: body?.payment_mode,
+      order_invoice_date: body?.order_invoice_date,
+      order_invoice_number: body?.order_invoice_number.toString(),
+      isContainFragileItem: body?.isContainFragileItem,
+      numberOfBoxes: body?.numberOfBoxes, // if undefined, default=> 0
+      orderBoxHeight: body?.orderBoxHeight,
+      orderBoxWidth: body?.orderBoxWidth,
+      orderBoxLength: body?.orderBoxLength,
+      orderSizeUnit: body?.orderSizeUnit,
+      orderWeight: body?.orderWeight,
+      orderWeightUnit: body?.orderWeightUnit,
+      productCount: body?.productCount,
+      amount2Collect: body?.amount2Collect,
+      customerDetails: body?.customerDetails,
+    };
+    if (body?.total_order_value > 50000) {
+      //@ts-ignore
+      data.ewaybill = body?.ewaybill;
+    }
+    const order2save = new B2COrderModel(data);
+    savedOrder = await order2save.save();
+    return res.status(200).send({ valid: true, order: savedOrder });
   } catch (err) {
     return next(err);
   }
-
-  return res.status(200).json({
-    valid: true,
-    order: savedOrder,
-  });
 };
 
 export const getOrders = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
@@ -264,6 +397,7 @@ export const getCourier = async (req: ExtendedRequest, res: Response, next: Next
       return next(err);
     }
   } else {
+    return res.status(200).send({ valid: false, message: "Invalid order type" });
     try {
       orderDetails = await B2BOrderModel.findById(productId);
     } catch (err) {
@@ -272,15 +406,22 @@ export const getCourier = async (req: ExtendedRequest, res: Response, next: Next
   }
   //TODO apply COD
   // @ts-ignore
-  const totalBoxWeight = orderDetails?.boxWeight * orderDetails?.numberOfBox;
+  // const totalBoxWeight = orderDetails?.boxWeight * orderDetails?.numberOfBox;
+  const totalOrderWeight = orderDetails?.orderWeight;
   let orderWeight: number | null = null;
-  if (orderDetails?.sizeUnit === "cm") {
+
+  if (new RegExp("cm", "i").test(orderDetails?.orderSizeUnit)) {
     const totalVolumetricWeight =
-      (orderDetails?.boxHeight * Number(orderDetails?.boxWeight) * orderDetails?.boxLength) / 5000;
-    orderWeight = totalBoxWeight > totalVolumetricWeight ? totalBoxWeight : totalVolumetricWeight;
-  } else if (orderDetails?.sizeUnit === "m") {
-    const totalVolumetricWeight = (orderDetails?.boxHeight * orderDetails?.boxWeight * orderDetails?.boxLength) / 5;
-    orderWeight = totalBoxWeight > totalVolumetricWeight ? totalBoxWeight : totalVolumetricWeight;
+      (orderDetails?.orderBoxHeight * orderDetails?.orderBoxWidth * orderDetails?.orderBoxLength) / 5000;
+    orderWeight = totalOrderWeight > totalVolumetricWeight ? totalOrderWeight : totalVolumetricWeight;
+  } else if (new RegExp("^m$", "i").test(orderDetails?.orderWeightUnit)) {
+    const totalVolumetricWeight =
+      (orderDetails?.orderBoxHeight * orderDetails?.orderBoxWidth * orderDetails?.orderBoxLength) / 5;
+    orderWeight = totalOrderWeight > totalVolumetricWeight ? totalOrderWeight : totalVolumetricWeight;
+  } else {
+    return res
+      .status(200)
+      .send({ valid: false, message: 'Unhandled orderSizeUnit, It should be either "m" or "cm".0' });
   }
   if (orderWeight === null) {
     return res.status(200).send({
@@ -288,7 +429,6 @@ export const getCourier = async (req: ExtendedRequest, res: Response, next: Next
       message: `unhandled box size unit, sizeUnit = ${orderDetails?.sizeUnit}`,
     });
   }
-
   // @ts-ignore
   let pickupAddress: PickupAddress = orderDetails?.pickupAddress;
   // @ts-ignore
@@ -298,7 +438,6 @@ export const getCourier = async (req: ExtendedRequest, res: Response, next: Next
 
   let vendorsDetails;
   try {
-    console.warn("working");
     let queryCondition = vendors.map((id: string) => {
       return { _id: id };
     });
@@ -320,11 +459,9 @@ export const getCourier = async (req: ExtendedRequest, res: Response, next: Next
   const pickupPinCode = pickupAddress.pincode;
   const deliveryPincode = Number(customerDetails.get("pincode"));
 
-  console.log("pickup:- ", pickupPinCode);
-  console.log("delivery:- ", deliveryPincode);
-
   const pickupPinCodeDetails = await getPincodeDetails(Number(pickupPinCode));
   const deliveryPinCodeDetails = await getPincodeDetails(Number(deliveryPincode));
+
   if (!pickupPinCodeDetails || !deliveryPinCodeDetails) {
     return res.status(200).send({
       valid: false,
@@ -427,7 +564,9 @@ export const getSpecificOrder = async (req: ExtendedRequest, res: Response, next
   //@ts-ignore
   const order = await B2COrderModel.findOne({ _id: orderId, sellerId: req.seller?._id }).lean();
 
-  return res.status(200).send({ valid: true, order: order });
+  return !order
+    ? res.status(200).send({ valid: false, message: "So such order found." })
+    : res.status(200).send({ valid: true, order: order });
 };
 
 type PickupAddress = {

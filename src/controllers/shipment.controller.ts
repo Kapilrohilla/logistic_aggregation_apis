@@ -10,8 +10,9 @@ import type { ExtendedRequest } from "../utils/middleware";
 import ProductModel from "../models/product.model";
 import ShipmentResponseModel from "../models/shipment-response.model";
 import VendorModel from "../models/vendor.model";
+import HubModel from "../models/hub.model";
 
-// orderType = 0 ? "b2c" : "b2b"
+/*
 export async function createShipment(req: ExtendedRequest, res: Response, next: NextFunction) {
   const body = req.body;
 
@@ -201,40 +202,218 @@ export async function createShipment(req: ExtendedRequest, res: Response, next: 
   }
   return res.status(500).send({ valid: false, message: "incomplete route", order: order });
 }
+*/
+
+// orderType = 0 ? "b2c" : "b2b"
+export async function createShipment(req: ExtendedRequest, res: Response, next: NextFunction) {
+  const body = req.body;
+
+  if (!isValidPayload(body, ["orderId", "orderType", "carrierId"])) {
+    return res.status(200).send({ valid: false, message: "Invalid payload" });
+  }
+  if (!isValidObjectId(body?.orderId)) {
+    return res.status(200).send({ valid: false, message: "Invalid orderId" });
+  }
+  if (body.orderType !== 0) {
+    return res.status(200).send({ valid: false, message: "Invalid orderType" });
+  }
+  if (req.seller?.gstno) return res.status(200).send({ valid: false, message: "KYC required. (GST number) " });
+
+  const vendorDetails = await VendorModel.findOne({ smartship_carrier_id: Number(body.carrierId) }).lean();
+  if (!vendorDetails) return res.status(200).send({ valid: false, message: "Invalid carrier" });
+
+  let order;
+  try {
+    order = await B2COrderModel.findOne({ _id: body.orderId, sellerId: req.seller._id });
+    if (!order) return res.status(200).send({ valid: false, message: "order not found" });
+  } catch (err) {
+    return next(err);
+  }
+  let hubDetails;
+  try {
+    hubDetails = await HubModel.findById(order.pickupAddress);
+    if (!hubDetails) {
+      return res.status(200).send({ valid: false, message: "Hub details not found" });
+    }
+  } catch (err) {
+    return next(err);
+  }
+  let productDetails;
+  try {
+    productDetails = await ProductModel.findById(order.productId);
+    if (!productDetails) {
+      return res.status(200).send({ valid: false, message: "Product details not found" });
+    }
+  } catch (err) {
+    return next(err);
+  }
+  const productValueWithTax =
+    Number(productDetails.taxable_value) +
+    (Number(productDetails.tax_rate) / 100) * Number(productDetails.taxable_value);
+
+  const totalOrderValue = productValueWithTax * Number(productDetails.quantity);
+
+  const shipmentAPIBody = {
+    request_info: {
+      run_type: "create",
+      shipment_type: 1, // 1 => forward, 2 => return order
+    },
+    orders: [
+      {
+        client_order_reference_id: order.order_reference_id,
+        order_collectable_amount: order.amount2Collect, // need to take  from user in future
+        total_order_value: totalOrderValue,
+        payment_type: order.payment_mode ? "cod" : "prepaid",
+        // package_order_weight: orderWeight,
+        // package_order_length: boxLength,
+        // package_order_height: boxHeight,
+        package_order_weight: order.orderBoxWidth,
+        package_order_length: order.orderBoxLength,
+        package_order_width: order.orderBoxWidth,
+        package_order_height: order.orderBoxHeight,
+        shipper_hub_id: hubDetails.hub_id,
+        shipper_gst_no: req.seller.gstno,
+        order_invoice_date: order?.order_invoice_date, // not mandatory
+        order_invoice_number: order?.order_invoice_number, // not mandatory
+        order_meta: {
+          // not mandatory
+          preferred_carriers: [body.carrierId],
+        },
+        product_details: [
+          {
+            client_product_reference_id: "something", // not mandantory
+            // @ts-ignore
+            product_name: productDetails.name,
+            // @ts-ignore
+            product_category: productDetails.category,
+            product_hsn_code: productDetails?.hsn_code, // appear to be mandantory
+            product_quantity: productDetails?.quantity,
+            product_invoice_value: 11234, //productDetails?.invoice_value, // invoice value
+            product_taxable_value: productDetails.taxable_value,
+            product_gst_tax_rate: productDetails.tax_rate,
+            // product_sgst_amount: 0,
+            // product_sgst_tax_rate: 0,
+            // product_cgst_amount: 0,
+            // product_cgst_tax_rate: 0,
+          },
+        ],
+        consignee_details: {
+          consignee_name: order.customerDetails.get("name"),
+          consignee_phone: order.customerDetails?.get("phone"),
+          consignee_email: order.customerDetails.get("email"),
+          consignee_complete_address: order.customerDetails.get("address"),
+          consignee_pincode: order.customerDetails.get("pincode"),
+        },
+      },
+    ],
+  };
+  let smartshipToken;
+  try {
+    const env = await EnvModel.findOne({}).lean();
+    if (!env) return res.status(500).send({ valid: false, message: "Smartship ENVs not found" });
+    smartshipToken = env.token_type + " " + env.access_token;
+  } catch (err) {
+    return next(err);
+  }
+  let externalAPIResponse: any;
+  try {
+    const requestConfig = { headers: { Authorization: smartshipToken } };
+    const response = await axios.post(
+      config.SMART_SHIP_API_BASEURL + APIs.CREATE_SHIPMENT,
+      shipmentAPIBody,
+      requestConfig
+    );
+    externalAPIResponse = response.data;
+    console.log(JSON.stringify(externalAPIResponse));
+    // return res.status(200).send({ valid: false, message: "Incomplete route", order: data });
+  } catch (err: unknown) {
+    return next(err);
+  }
+  if (externalAPIResponse?.status === "403") {
+    return res.status(500).send({ valid: true, message: "Smartship ENVs is expired." });
+  }
+  if (!externalAPIResponse?.data?.total_success_orders) {
+    return res
+      .status(200)
+      .send({ valid: false, message: "order failed to create", order, response: externalAPIResponse });
+  } else {
+    const shipmentResponseToSave = new ShipmentResponseModel({ order: order._id, response: externalAPIResponse });
+    try {
+      const savedShipmentResponse = await shipmentResponseToSave.save();
+      order.orderStage = 1;
+      const updatedOrder = await order.save();
+      return res.status(200).send({ valid: true, order: updatedOrder, shipment: savedShipmentResponse });
+    } catch (err) {
+      return next(err);
+    }
+  }
+  return res.status(500).send({ valid: false, message: "something went wrong", order, externalAPIResponse });
+}
 
 export async function cancelShipment(req: ExtendedRequest, res: Response, next: NextFunction) {
   const body = req.body;
 
-  const { orderReferenceId } = body;
+  const { orderId } = body;
 
-  if (orderReferenceId) {
+  if (!(orderId && isValidObjectId(orderId))) {
     return res.status(200).send({ valid: false, message: "invalid payload" });
   }
-  const order = await B2COrderModel.findOne({
-    order_refernce_id: orderReferenceId,
-    orderStage: 1,
-    sellerId: req.seller._id,
-  }).lean();
+
+  let order;
+  try {
+    order = await B2COrderModel.findOne({ _id: orderId, orderStage: 1, sellerId: req.seller._id }).lean();
+  } catch (err) {
+    return next(err);
+  }
 
   if (!order)
-    return res.status(200).send({ valid: false, message: `No active shipment found with #${orderReferenceId}` });
+    return res.status(200).send({ valid: false, message: `No active shipment found with orderId=${orderId}` });
 
   const env = await EnvModel.findOne({}).lean();
   if (!env) return res.status(500).send({ valid: false, message: "Smartship ENVs not found" });
   const smartshipToken = env.token_type + " " + env.access_token;
-
+  console.log("order");
+  console.log(order);
+  console.log("order");
   const shipmentAPIConfig = { headers: { Authorization: smartshipToken } };
-  const requestBody = { client_order_reference_ids: [orderReferenceId] };
-  /*
-  const response = await axios.post(
+
+  const requestBody = {
+    request_info: {},
+    orders: {
+      client_order_reference_ids: [order.order_reference_id],
+    },
+  };
+
+  const externalAPIResponse = await axios.post(
     config.SMART_SHIP_API_BASEURL + APIs.CANCEL_SHIPMENT,
     requestBody,
     shipmentAPIConfig
   );
-  console.log(JSON.stringify(response));
-    */
 
-  return res.status(500).send({ valid: false, message: "incomplete route" });
+  if (externalAPIResponse.data.status === "403") {
+    return res.status(500).send({ valid: false, message: "Smartships Envs expired" });
+  }
+  // if (!externalAPIResponse.data?.data?.success_orders?.length) {
+  if (!externalAPIResponse.data?.order_cancellation_details?.successful) {
+    return res
+      .status(200)
+      .send({ valid: false, message: "Shipment Cancelation request failed", response: externalAPIResponse.data });
+  } else {
+    try {
+      const updatedOrder = await B2COrderModel.findByIdAndUpdate(
+        order?._id,
+        {
+          orderStage: 2,
+        },
+        { new: true }
+      );
+
+      return res.status(200).send({ valid: true, message: "Order cancelation request Generated", updatedOrder });
+    } catch (err) {
+      return next(err);
+    }
+  }
+  return res.status(200).send({ valid: false, message: "Incomplete route", response: externalAPIResponse.data });
 }
 
 export async function trackShipment(req: ExtendedRequest, res: Response, next: NextFunction) {

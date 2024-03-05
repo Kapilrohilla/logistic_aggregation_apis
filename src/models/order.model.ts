@@ -1,40 +1,82 @@
 import mongoose from "mongoose";
 
+// const B2COrderSchema = new mongoose.Schema({
+//   sellerId: { type: mongoose.Schema.Types.ObjectId, ref: "Seller", required: true },
+//   // isB2C: { type: Boolean, required: true },
+//   //  will require seller details / maybe hub details
+//   orderStage: { type: Number, default: 0 }, // 0 - no shipped, 1 -shipped
+//   order_refernce_id: { type: String, required: true, unique: true },
+//   pickupAddress: { type: mongoose.Schema.Types.ObjectId, ref: "Hub" },
+//   productId: { type: mongoose.Schema.Types.ObjectId, ref: "Products", required: true },
+//   shipmentValue: { type: Number, required: true },
+//   productTaxRate: { type: Number, required: true, min: 0, max: 100 },
+//   isContainFragileItem: { type: Boolean, required: true },
+//   invoiceNumber: { type: String, required: true },
+//   invoiceDate: { type: String, required: true },
+//   paymentMode: { type: String, required: true }, // 1 = COD, 0 = prepaid
+//   numberOfBox: { type: Number, required: true },
+//   packageType: { type: String, required: true },
+//   boxLength: { type: Number, required: true },
+//   boxWidth: { type: Number, required: true },
+//   boxHeight: { type: Number, required: true },
+//   sizeUnit: { type: String, required: true },
+//   boxWeight: { type: Number, required: true },
+//   weightUnit: { type: String, required: true },
+//   ewaybill: { type: String, required: false },
+//   amountToCollect: { type: Number, required: false, default: 0 },
+//   customerDetails: {
+//     name: { type: String, required: true },
+//     email: { type: String, required: true },
+//     phone: { type: String, required: true },
+//     address: { type: String, required: true },
+//     city: { type: String, required: true },
+//     state: { type: String, required: true },
+//     pincode: { type: String, required: true },
+//     type: mongoose.Schema.Types.Map,
+//     required: true,
+//   },
+// });
+
 const B2COrderSchema = new mongoose.Schema({
   sellerId: { type: mongoose.Schema.Types.ObjectId, ref: "Seller", required: true },
-  // isB2C: { type: Boolean, required: true },
-  //  will require seller details / maybe hub details
-  orderStage: { type: Number, default: 0 }, // 0 - no shipped, 1 -shipped
-  order_refernce_id: { type: String, required: true, unique: true },
+  orderStage: { type: Number, required: true }, // 0 -> not shipped, 1 -> shipped, 2 -> Cancelation Request, 3->Canceled
   pickupAddress: { type: mongoose.Schema.Types.ObjectId, ref: "Hub" },
   productId: { type: mongoose.Schema.Types.ObjectId, ref: "Products", required: true },
-  shipmentValue: { type: Number, required: true },
-  productTaxRate: { type: Number, required: true, min: 0, max: 100 },
-  isContainFragileItem: { type: Boolean, required: true },
-  invoiceNumber: { type: String, required: true },
-  invoiceDate: { type: String, required: true },
-  paymentMode: { type: String, required: true }, // 1 = COD, 0 = prepaid
-  numberOfBox: { type: Number, required: true },
-  packageType: { type: String, required: true },
-  boxLength: { type: Number, required: true },
-  boxWidth: { type: Number, required: true },
-  boxHeight: { type: Number, required: true },
-  sizeUnit: { type: String, required: true },
-  boxWeight: { type: Number, required: true },
-  weightUnit: { type: String, required: true },
-  ewaybill: { type: String, required: false },
-  amountToCollect: { type: Number, required: false, default: 0 },
+
+  order_reference_id: { type: String, required: true },
+  total_order_value: { type: Number, required: true, min: 0 },
+  payment_mode: { type: Number, required: true }, // 0 -> prepaid, 1 -> COD
+  order_invoice_date: { type: String, required: true },
+  order_invoice_number: { type: Number, required: true },
+  isContainFragileItem: { type: Boolean, required: true, default: false },
+  numberOfBoxes: { type: Number, required: true, default: 1 },
+  orderBoxHeight: { type: Number, required: true },
+  orderBoxWidth: { type: Number, required: true },
+  orderBoxLength: { type: Number, required: true },
+  orderSizeUnit: { type: String, required: true },
+
+  orderWeight: { type: Number, required: true },
+  orderWeightUnit: { type: String, required: true },
+
+  // productCount: { type: Number, required: true, min: 1, default: 0 },
+  amount2Collect: { type: Number, required: false, min: 0, default: 0 },
+  ewaybill: { type: Number, required: false },
+
   customerDetails: {
+    type: mongoose.Schema.Types.Map,
+    required: true,
     name: { type: String, required: true },
     email: { type: String, required: true },
     phone: { type: String, required: true },
     address: { type: String, required: true },
-    city: { type: String, required: true },
-    state: { type: String, required: true },
+    city: { type: String, required: false },
+    state: { type: String, required: false },
     pincode: { type: String, required: true },
-    type: mongoose.Schema.Types.Map,
-    required: true,
   },
+
+  /*
+    product -> shipmentValue, taxrates
+  */
 });
 
 // const OrderSchema = new mongoose.Schema({
