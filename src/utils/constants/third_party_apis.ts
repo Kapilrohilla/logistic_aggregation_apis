@@ -7,7 +7,7 @@ export const HUB_SERVICEABILITY = "/v2/app/Fulfillmentservice/ServiceabilityHubW
 export const CREATE_SHIPMENT = "/v2/app/Fulfillmentservice/orderRegistration";
 // export const CANCEL_SHIPMENT = "/v2/app/Fulfillmentservice/orderCancel";
 export const CANCEL_SHIPMENT = "/v2/app/Fulfillmentservice/orderCancellation";
-export const TRACK_SHIPMENT = "/v1/Trackorder?order_reference_ids=OD00204";
+export const TRACK_SHIPMENT = "/v1/Trackorder?order_reference_ids";
 
 const APIs = {
   HUB_REGISTRATION,

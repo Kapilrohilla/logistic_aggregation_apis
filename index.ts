@@ -13,6 +13,7 @@ import customerRouter from "./src/routes/customer.routes";
 import morgan from "morgan";
 import shipmentRouter from "./src/routes/shipment.routes";
 import sellerRouter from "./src/routes/seller.routes";
+import runCron from "./src/utils/cronjobs";
 
 app.use(cors());
 
@@ -62,5 +63,7 @@ app.use("*", (req: Request, res: Response) => {
     message: "invalid route",
   });
 });
+
+runCron();
 
 app.listen(config.PORT, () => console.log("server running on port " + config.PORT));

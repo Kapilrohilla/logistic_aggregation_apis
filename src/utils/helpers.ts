@@ -34,7 +34,6 @@ export const validateSmartShipServicablity = async (
     },
     request_info: { extra_info: true, cost_info: false },
   };
-  console.log(hub_id, destinationPinode);
   if (orderType) {
     // 1/ true for forward 0 for reverse
     requestBody.order_info.destination_pincode = destinationPinode;
@@ -52,9 +51,10 @@ export const validateSmartShipServicablity = async (
       smartshipAPIconfig
     );
     const responseData = response.data;
+    console.log(responseData);
     return responseData.data.serviceability_status;
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return false;
   }
 
@@ -303,3 +303,10 @@ export const MetroCitys = [
   "Ahmedabad",
 ];
 export const NorthEastStates = ["Sikkim", "Mizoram", "Manipur", "Assam", "Megalaya", "Nagaland", "Tripura"];
+
+export async function getSmartShipToken(): Promise<string | false> {
+  const env = await EnvModel.findOne({}).lean();
+  if (!env) return false;
+  const smartshipToken = env.token_type + " " + env.access_token;
+  return smartshipToken;
+}

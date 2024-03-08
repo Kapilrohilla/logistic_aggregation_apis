@@ -8,6 +8,7 @@ export const getSeller = async (req: ExtendedRequest, res: Response, next: NextF
   delete seller?.__v;
   return res.status(200).send({ valid: true, seller });
 };
+
 export const updateSeller = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
   const body = req.body;
   const sellerId = req.seller._id;

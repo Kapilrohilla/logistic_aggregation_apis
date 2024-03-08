@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { isValidPayload } from "../utils/helpers";
+import { getSmartShipToken, isValidPayload } from "../utils/helpers";
 import { B2COrderModel } from "../models/order.model";
 import { isValidObjectId } from "mongoose";
 import axios from "axios";
@@ -11,7 +11,7 @@ import ProductModel from "../models/product.model";
 import ShipmentResponseModel from "../models/shipment-response.model";
 import VendorModel from "../models/vendor.model";
 import HubModel from "../models/hub.model";
-
+import type { HttpStatusCode } from "axios";
 /*
 export async function createShipment(req: ExtendedRequest, res: Response, next: NextFunction) {
   const body = req.body;
@@ -211,12 +211,9 @@ export async function createShipment(req: ExtendedRequest, res: Response, next: 
   if (!isValidPayload(body, ["orderId", "orderType", "carrierId"])) {
     return res.status(200).send({ valid: false, message: "Invalid payload" });
   }
-  if (!isValidObjectId(body?.orderId)) {
-    return res.status(200).send({ valid: false, message: "Invalid orderId" });
-  }
-  if (body.orderType !== 0) {
-    return res.status(200).send({ valid: false, message: "Invalid orderType" });
-  }
+  if (!isValidObjectId(body?.orderId)) return res.status(200).send({ valid: false, message: "Invalid orderId" });
+  if (body.orderType !== 0) return res.status(200).send({ valid: false, message: "Invalid orderType" });
+
   if (req.seller?.gstno) return res.status(200).send({ valid: false, message: "KYC required. (GST number) " });
 
   const vendorDetails = await VendorModel.findOne({ smartship_carrier_id: Number(body.carrierId) }).lean();
@@ -232,9 +229,7 @@ export async function createShipment(req: ExtendedRequest, res: Response, next: 
   let hubDetails;
   try {
     hubDetails = await HubModel.findById(order.pickupAddress);
-    if (!hubDetails) {
-      return res.status(200).send({ valid: false, message: "Hub details not found" });
-    }
+    if (!hubDetails) return res.status(200).send({ valid: false, message: "Hub details not found" });
   } catch (err) {
     return next(err);
   }
@@ -260,13 +255,10 @@ export async function createShipment(req: ExtendedRequest, res: Response, next: 
     },
     orders: [
       {
-        client_order_reference_id: order.order_reference_id,
+        client_order_reference_id: order?._id + "_" + order.order_reference_id,
         order_collectable_amount: order.amount2Collect, // need to take  from user in future
         total_order_value: totalOrderValue,
         payment_type: order.payment_mode ? "cod" : "prepaid",
-        // package_order_weight: orderWeight,
-        // package_order_length: boxLength,
-        // package_order_height: boxHeight,
         package_order_weight: order.orderBoxWidth,
         package_order_length: order.orderBoxLength,
         package_order_width: order.orderBoxWidth,
@@ -282,19 +274,13 @@ export async function createShipment(req: ExtendedRequest, res: Response, next: 
         product_details: [
           {
             client_product_reference_id: "something", // not mandantory
-            // @ts-ignore
-            product_name: productDetails.name,
-            // @ts-ignore
-            product_category: productDetails.category,
+            product_name: productDetails?.name,
+            product_category: productDetails?.category,
             product_hsn_code: productDetails?.hsn_code, // appear to be mandantory
             product_quantity: productDetails?.quantity,
             product_invoice_value: 11234, //productDetails?.invoice_value, // invoice value
             product_taxable_value: productDetails.taxable_value,
             product_gst_tax_rate: productDetails.tax_rate,
-            // product_sgst_amount: 0,
-            // product_sgst_tax_rate: 0,
-            // product_cgst_amount: 0,
-            // product_cgst_tax_rate: 0,
           },
         ],
         consignee_details: {
@@ -324,8 +310,6 @@ export async function createShipment(req: ExtendedRequest, res: Response, next: 
       requestConfig
     );
     externalAPIResponse = response.data;
-    console.log(JSON.stringify(externalAPIResponse));
-    // return res.status(200).send({ valid: false, message: "Incomplete route", order: data });
   } catch (err: unknown) {
     return next(err);
   }
@@ -352,7 +336,6 @@ export async function createShipment(req: ExtendedRequest, res: Response, next: 
 
 export async function cancelShipment(req: ExtendedRequest, res: Response, next: NextFunction) {
   const body = req.body;
-
   const { orderId } = body;
 
   if (!(orderId && isValidObjectId(orderId))) {
@@ -372,15 +355,12 @@ export async function cancelShipment(req: ExtendedRequest, res: Response, next: 
   const env = await EnvModel.findOne({}).lean();
   if (!env) return res.status(500).send({ valid: false, message: "Smartship ENVs not found" });
   const smartshipToken = env.token_type + " " + env.access_token;
-  console.log("order");
-  console.log(order);
-  console.log("order");
   const shipmentAPIConfig = { headers: { Authorization: smartshipToken } };
 
   const requestBody = {
     request_info: {},
     orders: {
-      client_order_reference_ids: [order.order_reference_id],
+      client_order_reference_ids: [order._id + "_" + order.order_reference_id],
     },
   };
 
@@ -393,45 +373,110 @@ export async function cancelShipment(req: ExtendedRequest, res: Response, next: 
   if (externalAPIResponse.data.status === "403") {
     return res.status(500).send({ valid: false, message: "Smartships Envs expired" });
   }
-  // if (!externalAPIResponse.data?.data?.success_orders?.length) {
-  if (!externalAPIResponse.data?.order_cancellation_details?.successful) {
-    return res
-      .status(200)
-      .send({ valid: false, message: "Shipment Cancelation request failed", response: externalAPIResponse.data });
-  } else {
-    try {
-      const updatedOrder = await B2COrderModel.findByIdAndUpdate(
-        order?._id,
-        {
-          orderStage: 2,
-        },
-        { new: true }
-      );
 
-      return res.status(200).send({ valid: true, message: "Order cancelation request Generated", updatedOrder });
+  const order_cancellation_details = externalAPIResponse.data?.data?.order_cancellation_details;
+
+  if (order_cancellation_details?.failure) {
+    // handling failure
+    const isAlreadyCancelled = new RegExp("Already Cancelled.").test(
+      externalAPIResponse?.data?.data?.order_cancellation_details?.failure[order?.order_reference_id]?.message
+    );
+    const isAlreadyRequested = new RegExp("Cancellation already requested.").test(
+      externalAPIResponse?.data?.data?.order_cancellation_details?.failure[order?.order_reference_id]?.message
+    );
+    if (isAlreadyCancelled) {
+      try {
+        const updatedOrder = await B2COrderModel.findByIdAndUpdate(order?._id, { orderStage: 3 }, { new: true });
+        return res.status(200).send({ valid: false, message: "Already Cancelled.", order: updatedOrder });
+      } catch (err: unknown) {
+        return next(err);
+      }
+    } else if (isAlreadyRequested) {
+      try {
+        const updatedOrder = await B2COrderModel.findByIdAndUpdate(order?._id, { orderStage: 2 }, { new: true });
+        return res
+          .status(200)
+          .send({ valid: false, message: "Already requested for cancellation.", order: updatedOrder });
+      } catch (err: unknown) {
+        return next(err);
+      }
+    } else {
+      return res.status(200).send({ valid: false, message: "Incomplete route section", order_cancellation_details });
+    }
+  } else {
+    // handling success.
+    try {
+      const updatedOrder = await B2COrderModel.findByIdAndUpdate(order?._id, { orderStage: 2 }, { new: true });
+      return res.status(200).send({ valid: true, message: "Order cancelation request Generated", order: updatedOrder });
     } catch (err) {
       return next(err);
     }
   }
-  return res.status(200).send({ valid: false, message: "Incomplete route", response: externalAPIResponse.data });
+  return res
+    .status(200)
+    .send({ valid: false, message: "unhandled section of route", response: externalAPIResponse.data });
 }
 
 export async function trackShipment(req: ExtendedRequest, res: Response, next: NextFunction) {
-  const body = req.body;
-
-  const { orderReferenceId } = body;
-
+  const orderReferenceId = req.query?.id;
   if (!orderReferenceId) return res.status(200).send({ valid: false, message: "orderReferenceId required" });
 
-  const orderWithOrderReferenceId = await B2COrderModel.find({ order_refernce_id: orderReferenceId }).lean();
-
+  const orderWithOrderReferenceId = await B2COrderModel.findOne({ order_reference_id: orderReferenceId }).lean();
   if (!orderWithOrderReferenceId) {
     return res.status(200).send({ valid: false, message: "order doesn't exists" });
   }
-  const env = await EnvModel.findOne({}).lean();
-  if (!env) return res.status(200).send({ valid: false, message: "Smartship ENVs not found" });
 
-  const smartshipToken = env.token_type + " " + env.access_token;
+  const smartshipToken = await getSmartShipToken();
+  if (!smartshipToken) return res.status(200).send({ valid: false, message: "Smarthship ENVs not found" });
+
   const shipmentAPIConfig = { headers: { Authorization: smartshipToken } };
+  try {
+    const apiUrl = `${config.SMART_SHIP_API_BASEURL}${APIs.TRACK_SHIPMENT}=${
+      orderWithOrderReferenceId._id + "_" + orderReferenceId
+    }`;
+    const response = await axios.get(apiUrl, shipmentAPIConfig);
+    const responseJSON: TrackResponse = response.data;
+    if (responseJSON.message === "success") {
+      const keys: string[] = Object.keys(responseJSON.data.scans);
+      const requiredResponse: RequiredTrackResponse = responseJSON.data.scans[keys[0]][0];
+      /*console.log(requiredResponse);*/
+      return res.status(200).send({
+        valid: true,
+        response: {
+          order_reference_id: requiredResponse?.order_reference_id?.split("_")[1],
+          carrier_name: requiredResponse?.carrier_name,
+          order_date: requiredResponse?.order_date,
+          action: requiredResponse?.action,
+          status_description: requiredResponse?.status_description,
+        },
+      });
+    } else {
+      return res.status(500).send({ valid: false, message: "Something went wrong", response: responseJSON });
+    }
+  } catch (err: unknown) {
+    return next(err);
+  }
   return res.status(500).send({ valid: false, message: "Incomplete route" });
 }
+
+type TrackResponse = {
+  status: 0 | 1; // most probably always 1, not sure for 0
+  code: HttpStatusCode;
+  message: string;
+  data: {
+    scans: any;
+  };
+};
+type RequiredTrackResponse = {
+  request_order_id?: string;
+  order_reference_id?: string;
+  tracking_number?: string;
+  carrier_name?: string;
+  date_time?: string;
+  location?: string;
+  action?: string;
+  status_code?: string;
+  status_description?: string;
+  order_date?: string;
+  billing_name?: string;
+};

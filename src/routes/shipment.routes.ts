@@ -10,6 +10,6 @@ shipmentRouter.post("/", createShipment);
 shipmentRouter.post("/cancel", cancelShipment);
 
 //@ts-ignore
-shipmentRouter.post("/track", trackShipment);
+shipmentRouter.get("/track", trackShipment);
 
 export default shipmentRouter;
