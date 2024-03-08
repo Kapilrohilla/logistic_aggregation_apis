@@ -11,12 +11,7 @@ import { getPincodeDetails, isValidPayload, validatePhone } from "../utils/helpe
 export const createHub = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
   const body = req.body;
 
-  if (!body) {
-    return res.status(200).send({
-      valid: false,
-      message: "payload required",
-    });
-  }
+  if (!body) return res.status(200).send({ valid: false, message: "payload required" });
 
   if (!(body?.name && body?.pincode && body?.address1 && body?.address2 && body?.phone)) {
     return res.status(200).send({

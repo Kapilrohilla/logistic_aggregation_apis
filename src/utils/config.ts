@@ -1,5 +1,6 @@
-import dotnev from "dotenv";
-dotnev.config();
+import * as dotenv from "dotenv";
+
+dotenv.config();
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -21,7 +22,11 @@ const SMART_SHIP_GRANT_TYPE = process.env.grant_type;
 
 const SMART_SHIP_API_BASEURL = process.env.SMARTSHIP_API_BASEURL;
 
-const config = {
+const SMARTR_USERNAME = process.env.SMARTR_USERNAME;
+
+const SMARTR_PASSWORD = process.env.SMARTR_PASSWORD;
+
+const envConfig = {
   MONGODB_URI,
   SALT_ROUND,
   PORT,
@@ -32,6 +37,8 @@ const config = {
   SMART_SHIP_CLIENT_SECRET,
   SMART_SHIP_GRANT_TYPE,
   SMART_SHIP_API_BASEURL,
+  SMARTR_USERNAME,
+  SMARTR_PASSWORD,
 };
 
-export default config;
+export default envConfig;

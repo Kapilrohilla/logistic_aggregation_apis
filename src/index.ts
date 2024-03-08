@@ -1,19 +1,20 @@
 import express from "express";
+// import * as dotenv from "dotenv";
 import type { Request, Response } from "express";
-import authRouter from "./src/routes/auth.routes";
+import authRouter from "./routes/auth.routes";
 import mongoose from "mongoose";
 const app = express();
-import config from "./src/utils/config";
-import orderRouter from "./src/routes/order.routes";
-import { AuthMiddleware, ErrorHandler } from "./src/utils/middleware";
-import { addVendors, connectSmartShip, getSellers, ratecalculatorController } from "./src/utils/helpers";
-import hubRouter from "./src/routes/hub.routes";
+import config from "./utils/config";
+import orderRouter from "./routes/order.routes";
+import { AuthMiddleware, ErrorHandler } from "./utils/middleware";
+import { addVendors, connectSmartShip, getSellers, ratecalculatorController } from "./utils/helpers";
+import hubRouter from "./routes/hub.routes";
 import cors from "cors";
-import customerRouter from "./src/routes/customer.routes";
+import customerRouter from "./routes/customer.routes";
 import morgan from "morgan";
-import shipmentRouter from "./src/routes/shipment.routes";
-import sellerRouter from "./src/routes/seller.routes";
-import runCron from "./src/utils/cronjobs";
+import shipmentRouter from "./routes/shipment.routes";
+import sellerRouter from "./routes/seller.routes";
+import runCron from "./utils/cronjobs";
 
 app.use(cors());
 

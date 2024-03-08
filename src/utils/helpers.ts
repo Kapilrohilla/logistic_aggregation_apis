@@ -75,7 +75,7 @@ export const connectSmartShip = () => {
     .then((r) => {
       console.log("SmartShip API response: " + JSON.stringify(r.data));
       const responseBody = r.data;
-      const savedEnv = new EnvModel(responseBody);
+      const savedEnv = new EnvModel({ name: "SMARTSHIP", ...responseBody });
       EnvModel.deleteMany({})
         .then(() => {
           savedEnv
@@ -96,6 +96,30 @@ export const connectSmartShip = () => {
     .catch((err) => {
       console.log("SmartShip API Error Response: ");
       console.error(err?.response?.data);
+    });
+};
+
+export const connectSmartR = () => {
+  let requestBody = {
+    username: config.SMARTR_USERNAME,
+    password: config.SMARTR_PASSWORD,
+  };
+
+  let requestConfig = {
+    method: "post",
+    maxBodyLength: Infinity,
+    url: "https://uat.smartr.in/api/v1/get-token/",
+    headers: { "Content-Type": "application/json" },
+    data: requestBody,
+  };
+
+  axios
+    .request(requestConfig)
+    .then((response) => {
+      console.log(JSON.stringify(response.data));
+    })
+    .catch((error) => {
+      console.error(error);
     });
 };
 
