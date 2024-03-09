@@ -90,7 +90,7 @@ export const CONNECT_SMARTSHIP = () => {
         });
     })
     .catch((err) => {
-      Logger.err("SmartShip API Error Reserr?.response?.dataponse: " + JSON.stringify(err?.response?.data));
+      Logger.err("Error, smartship:" + JSON.stringify(err?.response?.data));
     });
 };
 

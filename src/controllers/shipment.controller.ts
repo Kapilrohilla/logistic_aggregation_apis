@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction } from "express";
+import { type Request, type Response, type NextFunction, response } from "express";
 import { getSMARTRToken, getSmartShipToken, isValidPayload } from "../utils/helpers";
 import { B2COrderModel } from "../models/order.model";
 import { isValidObjectId } from "mongoose";
@@ -11,8 +11,9 @@ import ProductModel from "../models/product.model";
 import ShipmentResponseModel from "../models/shipment-response.model";
 import VendorModel from "../models/vendor.model";
 import HubModel from "../models/hub.model";
-import type { HttpStatusCode } from "axios";
+import { HttpStatusCode } from "axios";
 import Logger from "../utils/logger";
+import https from "node:https";
 /*
 export async function createShipment(req: ExtendedRequest, res: Response, next: NextFunction) {
   const body = req.body;
@@ -461,6 +462,151 @@ export async function trackShipment(req: ExtendedRequest, res: Response, next: N
     return next(err);
   }
   return res.status(500).send({ valid: false, message: "Incomplete route" });
+}
+
+export async function createB2BShipment(req: ExtendedRequest, res: Response, next: NextFunction) {
+  const smartr_token = await getSMARTRToken();
+  if (!smartr_token) return res.status(500).send({ valid: false, message: "SMARTR token not found" });
+
+  let data = [
+    {
+      packageDetails: {
+        awbNumber: "",
+        orderNumber: "5765678910123",
+        productType: "WKO",
+        collectableValue: "0",
+        declaredValue: "99",
+        itemDesc: "Nykaa lipstik",
+        dimensions: "10~10~10~1~0.5~0/",
+        pieces: "1",
+        weight: "12",
+        invoiceNumber: "34543",
+      },
+      deliveryDetails: {
+        toName: "Ankur",
+        toAdd: "plot no. 198, sector-110, Gurgaon",
+        toCity: "Gurgaon",
+        toState: "HR",
+        toPin: "122001",
+        toMobile: "9711908116",
+        toAddType: "Home",
+        toLat: "26.00",
+        toLng: "78.00",
+        toEmail: "ankurs@smartr.in",
+      },
+      pickupDetails: {
+        fromName: "Smartr Express",
+        fromAdd: "plot no. 198, sector-110, Gurgaon",
+        fromCity: "Gurgaon",
+        fromState: "HR",
+        fromPin: "122001",
+        fromMobile: "9711908116",
+        fromAddType: "Seller",
+        fromLat: "26.00",
+        fromLng: "78.00",
+        fromEmail: "ankurs@smartr.in",
+      },
+      returnDetails: {
+        rtoName: "Smartr Express",
+        rtoAdd: "plot no. 198, sector-110, Gurgaon",
+        rtoCity: "Gurgaon",
+        rtoState: "Haryana",
+        rtoPin: "122001",
+        rtoMobile: "9711908116",
+        rtoAddType: "Seller",
+        rtoLat: "26.00",
+        rtoLng: "78.00",
+        rtoEmail: "ankurs@smartr.in",
+      },
+      additionalInformation: {
+        customerCode: "SMARTRFOC",
+        essentialFlag: "",
+        otpFlag: "",
+        dgFlag: "",
+        isSurface: "true",
+        isReverse: "false",
+        sellerGSTIN: "06GSTIN678YUIOIN",
+        sellerERN: "",
+      },
+    },
+  ];
+
+  const apiConfig = {
+    headers: {
+      Authorization: smartr_token,
+    },
+    httpsAgent: new https.Agent({
+      rejectUnauthorized: false, // set true to verify ssl certificate
+    }),
+  };
+  // /*
+  axios
+    .post(APIs.CREATE_SMARTR_ORDER, data, apiConfig)
+    .then((response: { data: any }) => {})
+    .catch((error: unknown) => {
+      return next(error);
+    });
+
+  // */
+  return res.status(500).send({ valid: false, message: "Incomplete route" });
+}
+
+export async function trackB2BShipment(req: ExtendedRequest, res: Response, next: NextFunction) {
+  const awb = "SLAWB00269";
+  // const awb = "s2345aaaa";
+  const smartr_token = await getSMARTRToken();
+  if (!smartr_token) {
+    return res.status(500).send({ valid: false, message: "SMARTr token not found" });
+  }
+  const apiConfig = {
+    headers: { Authorization: smartr_token },
+    httpsAgent: new https.Agent({
+      rejectUnauthorized: false, // set true to verify ssl certificate
+    }),
+  };
+  try {
+    const api = APIs.TRACK_SMARTR_ORDER + `=${awb}`;
+    const response = await axios.get(api, apiConfig);
+    const responseJSON: { success: boolean; data: any[]; message?: boolean } = response.data;
+    if (responseJSON.success)
+      return res.status(500).send({ valid: true, message: "Incomplete route", responseJSON: responseJSON.data });
+    else return res.status(500).send({ valid: false, message: "Incomplete route", resposneJSON: responseJSON.message });
+  } catch (err: unknown) {
+    return next(err);
+  }
+}
+
+export async function cancelB2BShipment(req: ExtendedRequest, res: Response, next: NextFunction) {
+  const smartr_token = await getSMARTRToken();
+  if (!smartr_token) {
+    return res.status(500).send({ valid: false, message: "SMARTr token not found" });
+  }
+  const apiPayload = [
+    {
+      waybillNumber: "SLAWB00269",
+      WaybillStatus: "Cancelled",
+      cancelledRemarks: "Dont want",
+    },
+  ];
+
+  const apiConfig = {
+    headers: { Authorization: smartr_token },
+    httpsAgent: new https.Agent({
+      rejectUnauthorized: false,
+    }),
+  };
+  let responseJSON: { awb: string; message: string; success: boolean }[];
+  try {
+    const response = await axios.post(APIs.CANCEL_SMARTR_ORDER, apiPayload, apiConfig);
+    responseJSON = response.data;
+  } catch (err) {
+    return next(err);
+  }
+  if (!responseJSON[0].success) {
+    return res.status(200).send({ valid: false, message: "Incomplete route", responseJSON: responseJSON[0].message });
+  } else {
+    return res.status(500).send({ valid: true, message: "Incomplete route", responseJSON });
+  }
 }
 
 type TrackResponse = {

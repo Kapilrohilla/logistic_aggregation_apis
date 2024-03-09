@@ -6,7 +6,19 @@ export const HUB_SERVICEABILITY = "/v2/app/Fulfillmentservice/ServiceabilityHubW
 
 export const CREATE_SHIPMENT = "/v2/app/Fulfillmentservice/orderRegistration";
 export const CANCEL_SHIPMENT = "/v2/app/Fulfillmentservice/orderCancellation";
+/**
+ * append order_reference_id
+ * eg: TRACK_SHIPMENT + order_reference_id
+ */
 export const TRACK_SHIPMENT = "/v1/Trackorder?order_reference_ids"; // url => TRACK_SHIPMENT+"=order_reference_id"
+
+export const CREATE_SMARTR_ORDER = "https://uat.smartr.in/api/v1/add-order";
+/**
+ * append awbnumber
+ * eg:TRACK_SMARTR_ORDER + ""=awbNumber"
+ */
+const TRACK_SMARTR_ORDER = "https://uat.smartr.in/api/v1/tracking/surface/?awbs";
+const CANCEL_SMARTR_ORDER = "https://uat.smartr.in/api/v1/cancellation/";
 
 const APIs = {
   HUB_REGISTRATION,
@@ -16,5 +28,12 @@ const APIs = {
   HUB_SERVICEABILITY,
   CANCEL_SHIPMENT,
   TRACK_SHIPMENT,
+  CREATE_SMARTR_ORDER,
+  TRACK_SMARTR_ORDER,
+  /**
+   * append awbnumber
+   * eg:TRACK_SMARTR_ORDER + ""=awbNumber"
+   */
+  CANCEL_SMARTR_ORDER,
 };
 export default APIs;

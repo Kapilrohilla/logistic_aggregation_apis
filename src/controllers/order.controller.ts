@@ -332,6 +332,21 @@ export const getOrders = async (req: ExtendedRequest, res: Response, next: NextF
 export const createB2BOrder = async (req: Request, res: Response, next: NextFunction) => {
   const body = req.body;
 
+  if (
+    !isValidPayload(body, [
+      "client_name",
+      "freight",
+      "pickup_type",
+      "insurance_type",
+      "pickupAddress",
+      "packageDetails",
+      "ammount",
+    ])
+  ) {
+  }
+  /*
+  const body = req.body;
+
   // validating pickup address
   if (!body?.pickupAddress) {
     return res.status(200).send({
@@ -380,6 +395,7 @@ export const createB2BOrder = async (req: Request, res: Response, next: NextFunc
   }
 
   return res.status(200).json({ valid: true, order: savedOrder });
+  */
 };
 
 export const getCourier = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
