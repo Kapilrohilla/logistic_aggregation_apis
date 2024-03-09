@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { getSmartShipToken, isValidPayload } from "../utils/helpers";
+import { getSMARTRToken, getSmartShipToken, isValidPayload } from "../utils/helpers";
 import { B2COrderModel } from "../models/order.model";
 import { isValidObjectId } from "mongoose";
 import axios from "axios";
@@ -295,9 +295,8 @@ export async function createShipment(req: ExtendedRequest, res: Response, next: 
   };
   let smartshipToken;
   try {
-    const env = await EnvModel.findOne({}).lean();
-    if (!env) return res.status(500).send({ valid: false, message: "Smartship ENVs not found" });
-    smartshipToken = env.token_type + " " + env.access_token;
+    smartshipToken = await getSmartShipToken();
+    if (!smartshipToken) return res.status(200).send({ valid: false, message: "Invalid token" });
   } catch (err) {
     return next(err);
   }
@@ -313,6 +312,7 @@ export async function createShipment(req: ExtendedRequest, res: Response, next: 
   } catch (err: unknown) {
     return next(err);
   }
+  console.log(externalAPIResponse);
   if (externalAPIResponse?.status === "403") {
     return res.status(500).send({ valid: true, message: "Smartship ENVs is expired." });
   }
@@ -352,9 +352,12 @@ export async function cancelShipment(req: ExtendedRequest, res: Response, next: 
   if (!order)
     return res.status(200).send({ valid: false, message: `No active shipment found with orderId=${orderId}` });
 
-  const env = await EnvModel.findOne({}).lean();
-  if (!env) return res.status(500).send({ valid: false, message: "Smartship ENVs not found" });
-  const smartshipToken = env.token_type + " " + env.access_token;
+  // const env = await EnvModel.findOne({}).lean();
+  // if (!env) return res.status(500).send({ valid: false, message: "Smartship ENVs not found" });
+  // const smartshipToken = env.token_type + " " + env.access_token;
+  const smartshipToken = await getSmartShipToken();
+  if (!smartshipToken) return res.status(200).send({ valid: false, message: "SMARTSHIP ENVs not found" });
+
   const shipmentAPIConfig = { headers: { Authorization: smartshipToken } };
 
   const requestBody = {

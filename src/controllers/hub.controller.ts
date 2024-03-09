@@ -6,7 +6,7 @@ import axios from "axios";
 import config from "../utils/config";
 import APIs from "../utils/constants/third_party_apis";
 import EnvModel from "../models/env.model";
-import { getPincodeDetails, isValidPayload, validatePhone } from "../utils/helpers";
+import { getPincodeDetails, getSMARTRToken, isValidPayload, validatePhone } from "../utils/helpers";
 
 export const createHub = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
   const body = req.body;
@@ -52,19 +52,21 @@ export const createHub = async (req: ExtendedRequest, res: Response, next: NextF
       message: `Hub already exists with name: ${name}`,
     });
   }
-  const env = await EnvModel.findOne({}).lean();
-  if (!env) {
-    return res.status(500).send({
-      valid: false,
-      message: "Smartship ENVs not found",
-    });
-  }
+  // const env = await EnvModel.findOne({}).lean();
+  // if (!env) {
+  //   return res.status(500).send({
+  //     valid: false,
+  //     message: "Smartship ENVs not found",
+  //   });
+  // }
 
   const pincodeDetails = await getPincodeDetails(pincode);
   const city = pincodeDetails?.District;
   const state = pincodeDetails?.StateName;
 
-  const smartshipToken = env.token_type + " " + env.access_token;
+  const smartshipToken = await getSMARTRToken();
+  if (!smartshipToken) return res.status(200).send({ valid: false, message: "smartship ENVs not found" });
+
   const smartshipAPIconfig = { headers: { Authorization: smartshipToken } };
   const smartshipApiBody = {
     hub_details: {
@@ -228,17 +230,10 @@ export const updateHub = async (req: ExtendedRequest, res: Response, next: NextF
   }
   if (hubData === null) return res.status(200).send({ valid: false, message: "Hub not found" });
 
-  const env = await EnvModel.findOne({}).lean();
-  if (!env) {
-    return res.status(500).send({
-      valid: false,
-      message: "Smartship ENVs not found",
-    });
-  }
-
   const { hub_id, name, phone, pincode, city, state, address1, address2, delivery_type_id } = hubData;
 
-  const smartshipToken = env.token_type + " " + env.access_token;
+  const smartshipToken = await getSMARTRToken();
+  if (!smartshipToken) return res.status(500).send({ valid: false, message: "SMARTSHIP envs not found" });
 
   if (body?.pincode) {
     const pincodeDetails = await getPincodeDetails(Number(body?.pincode));
@@ -247,7 +242,6 @@ export const updateHub = async (req: ExtendedRequest, res: Response, next: NextF
   }
 
   const smartshipAPIconfig = { headers: { Authorization: smartshipToken } };
-  // const smartshipAPIBody = { hub_id, hub_name: name, hub_phone: phone, pincode, city, state, address1, address2 };
   const smartshipAPIBody = {
     hub_id,
     hub_name: name,
@@ -324,7 +318,10 @@ export const deleteHub = async (req: ExtendedRequest, res: Response, next: NextF
     });
   }
 
-  const smartshipToken = env.token_type + " " + env.access_token;
+  // const smartshipToken = env.token_type + " " + env.access_token;
+  const smartshipToken = await getSMARTRToken();
+  if (smartshipToken === false) return res.status(200).send({ valid: false, message: "smartship ENVs not found" });
+
   const smartshipAPIconfig = { headers: { Authorization: smartshipToken } };
   const smartshipAPIPayload = { hub_ids: [hubData.hub_id] };
 

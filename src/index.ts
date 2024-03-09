@@ -7,14 +7,14 @@ const app = express();
 import config from "./utils/config";
 import orderRouter from "./routes/order.routes";
 import { AuthMiddleware, ErrorHandler } from "./utils/middleware";
-import { addVendors, connectSmartShip, getSellers, ratecalculatorController } from "./utils/helpers";
+import { addVendors, getSellers, ratecalculatorController } from "./utils/helpers";
 import hubRouter from "./routes/hub.routes";
 import cors from "cors";
 import customerRouter from "./routes/customer.routes";
 import morgan from "morgan";
 import shipmentRouter from "./routes/shipment.routes";
 import sellerRouter from "./routes/seller.routes";
-import runCron from "./utils/cronjobs";
+import runCron, { CONNECT_SMARTR, CONNECT_SMARTSHIP } from "./utils/cronjobs";
 
 app.use(cors());
 
@@ -36,7 +36,8 @@ mongoose
   .connect(process.env.MONGODB_URI!)
   .then(() => {
     console.log(" db connected successfully");
-    connectSmartShip();
+    CONNECT_SMARTSHIP();
+    CONNECT_SMARTR();
   })
   .catch((err) => {
     console.log(err.message);

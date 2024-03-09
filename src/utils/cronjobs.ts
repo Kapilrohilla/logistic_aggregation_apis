@@ -4,6 +4,8 @@ import config from "./config";
 import APIs from "./constants/third_party_apis";
 import { getSmartShipToken } from "./helpers";
 import * as cron from "node-cron";
+import EnvModel from "../models/env.model";
+import https from "node:https";
 
 /**
  * Update order with statusCode (2) to cancelled order(3)
@@ -32,9 +34,6 @@ const CANCEL_REQUESTED_ORDER = async (): Promise<void> => {
   const shipmentAPIConfig = { headers: { Authorization: smartshipToken } };
 
   const responseJSON = await (await axios.post(apiUrl, requestBody, shipmentAPIConfig)).data;
-  console.log("-----------responseJSON------------");
-  console.log(JSON.stringify(responseJSON));
-  console.log("-----------responseJSON------------");
 
   const order_cancellation_details = responseJSON?.data?.order_cancellation_details;
   const failures = order_cancellation_details?.failure;
@@ -57,14 +56,92 @@ const CANCEL_REQUESTED_ORDER = async (): Promise<void> => {
   console.log(ack);
 };
 
+export const CONNECT_SMARTSHIP = () => {
+  const requestBody = {
+    username: config.SMART_SHIP_USERNAME,
+    password: config.SMART_SHIP_PASSWORD,
+    client_id: config.SMART_SHIP_CLIENT_ID,
+    client_secret: config.SMART_SHIP_CLIENT_SECRET,
+    grant_type: config.SMART_SHIP_GRANT_TYPE,
+  };
+
+  axios
+    .post("https://oauth.smartship.in/loginToken.php", requestBody)
+    .then((r) => {
+      console.log("SmartShip API response: " + JSON.stringify(r.data));
+      const responseBody = r.data;
+      const savedEnv = new EnvModel({ name: "SMARTSHIP", ...responseBody });
+      EnvModel.deleteMany({ name: "SMARTSHIP" })
+        .then(() => {
+          savedEnv
+            .save()
+            .then((r) => {
+              console.log("SMARTSHIP ENVs, updated successfully");
+            })
+            .catch((err) => {
+              console.log("Error: while adding environment variable to ENV Document");
+              console.log(err);
+            });
+        })
+        .catch((err) => {
+          console.log("Failed to clean up environment variables Document");
+          console.log(err);
+        });
+    })
+    .catch((err) => {
+      console.error("SmartShip API Error Reserr?.response?.dataponse: " + JSON.stringify(err?.response?.data));
+    });
+};
+
+/**
+ * function to get SMARTR token and save it into the database
+ * @return void
+ */
+export const CONNECT_SMARTR = async (): Promise<void> => {
+  let requestBody = {
+    username: config.SMARTR_USERNAME,
+    password: config.SMARTR_PASSWORD,
+  };
+
+  try {
+    const response = await axios.post("https://uat.smartr.in/api/v1/get-token/", requestBody, {
+      httpsAgent: new https.Agent({
+        rejectUnauthorized: false, // Set to true to verify the certificate
+      }),
+    });
+    const responseJSON = response.data;
+    if (responseJSON.success === true && responseJSON.message === "Logged In!") {
+      const deleteENV = await EnvModel.deleteOne({ name: "SMARTR" }).lean();
+      // if (deleteENV.deletedCount) {
+      const env = new EnvModel({ name: "SMARTR", ...responseJSON });
+      const savedEnv = await env.save();
+      console.log("SMARTR LOGGEDIN: " + JSON.stringify(savedEnv));
+      // }
+    } else {
+      console.log("ERROR, smartr: " + JSON.stringify(responseJSON));
+    }
+  } catch (err) {
+    console.error("SOMETHING WENT WRONG..");
+    console.error(err);
+  }
+};
 /**
  * function to run CronJobs currrently one cron is scheduled to update the status of order which are cancelled to "Already Cancelled".
  * @emits CANCEL_REQUESTED_ORDER
  * @returns void
  */
 export default function runCron() {
-  const expression4everyMinute = "* * * * *";
-  if (cron.validate(expression4everyMinute)) {
-    cron.schedule(expression4everyMinute, CANCEL_REQUESTED_ORDER);
+  const expression4every5Minute = "5 * * * *";
+  const expression4every59Minute = "59 * * * *";
+  const expression4every9_59Hr = "59 9 * * * ";
+  if (
+    cron.validate(expression4every5Minute) &&
+    cron.validate(expression4every59Minute) &&
+    cron.validate(expression4every9_59Hr)
+  ) {
+    cron.schedule(expression4every59Minute, CONNECT_SMARTSHIP);
+    cron.schedule(expression4every5Minute, CANCEL_REQUESTED_ORDER);
+    cron.schedule(expression4every9_59Hr, CONNECT_SMARTR);
+    console.log("cron scheduled");
   }
 }

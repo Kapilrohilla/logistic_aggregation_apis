@@ -40,9 +40,8 @@ export const validateSmartShipServicablity = async (
   } else {
     requestBody.source_pincode = destinationPinode;
   }
-  const env = await EnvModel.findOne({}).lean();
-  if (env === null) return false;
-  const smartshipToken = env.token_type + " " + env.access_token;
+  const smartshipToken = await getSmartShipToken();
+
   const smartshipAPIconfig = { headers: { Authorization: smartshipToken } };
   try {
     const response = await axios.post(
@@ -59,68 +58,6 @@ export const validateSmartShipServicablity = async (
   }
 
   return false;
-};
-
-export const connectSmartShip = () => {
-  const requestBody = {
-    username: config.SMART_SHIP_USERNAME,
-    password: config.SMART_SHIP_PASSWORD,
-    client_id: config.SMART_SHIP_CLIENT_ID,
-    client_secret: config.SMART_SHIP_CLIENT_SECRET,
-    grant_type: config.SMART_SHIP_GRANT_TYPE,
-  };
-
-  axios
-    .post("https://oauth.smartship.in/loginToken.php", requestBody)
-    .then((r) => {
-      console.log("SmartShip API response: " + JSON.stringify(r.data));
-      const responseBody = r.data;
-      const savedEnv = new EnvModel({ name: "SMARTSHIP", ...responseBody });
-      EnvModel.deleteMany({})
-        .then(() => {
-          savedEnv
-            .save()
-            .then((r) => {
-              console.log("Environment varibale Document updated successfully");
-            })
-            .catch((err) => {
-              console.log("Error: while adding environment variable to ENV Document");
-              console.log(err);
-            });
-        })
-        .catch((err) => {
-          console.log("Failed to clean up environment variables Document");
-          console.log(err);
-        });
-    })
-    .catch((err) => {
-      console.log("SmartShip API Error Response: ");
-      console.error(err?.response?.data);
-    });
-};
-
-export const connectSmartR = () => {
-  let requestBody = {
-    username: config.SMARTR_USERNAME,
-    password: config.SMARTR_PASSWORD,
-  };
-
-  let requestConfig = {
-    method: "post",
-    maxBodyLength: Infinity,
-    url: "https://uat.smartr.in/api/v1/get-token/",
-    headers: { "Content-Type": "application/json" },
-    data: requestBody,
-  };
-
-  axios
-    .request(requestConfig)
-    .then((response) => {
-      console.log(JSON.stringify(response.data));
-    })
-    .catch((error) => {
-      console.error(error);
-    });
 };
 
 export const addVendors = async (req: Request, res: Response, next: NextFunction) => {
@@ -329,8 +266,17 @@ export const MetroCitys = [
 export const NorthEastStates = ["Sikkim", "Mizoram", "Manipur", "Assam", "Megalaya", "Nagaland", "Tripura"];
 
 export async function getSmartShipToken(): Promise<string | false> {
-  const env = await EnvModel.findOne({}).lean();
+  const env = await EnvModel.findOne({ name: "SMARTSHIP" }).lean();
   if (!env) return false;
-  const smartshipToken = env.token_type + " " + env.access_token;
+  //@ts-ignore
+  const smartshipToken = env?.token_type + " " + env?.access_token;
   return smartshipToken;
+}
+export async function getSMARTRToken(): Promise<string | false> {
+  const env = await EnvModel.findOne({ name: "SMARTR" }).lean();
+  if (!env) return false;
+
+  //@ts-ignore
+  const token = env?.data?.token_type + " " + env?.data?.access_token;
+  return token;
 }
