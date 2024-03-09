@@ -13,6 +13,7 @@ import {
   validateStringDate,
 } from "../utils/helpers";
 import { isValidObjectId } from "mongoose";
+import Logger from "../utils/logger";
 
 // export const createB2COrder = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
 //   const body = req.body;
@@ -473,24 +474,24 @@ export const getCourier = async (req: ExtendedRequest, res: Response, next: Next
     let increment_price = null;
     if (pickupPinCodeDetails.District === deliveryPinCodeDetails.District) {
       // same city
-      console.log("same city");
+      Logger.log("same city");
       increment_price = cv.withinCity;
     } else if (pickupPinCodeDetails.StateName === deliveryPinCodeDetails.StateName) {
-      console.log("same state");
+      Logger.log("same state");
       // same state
       increment_price = cv.withinZone;
     } else if (
       MetroCitys.find((city) => city === pickupPinCodeDetails?.District) &&
       MetroCitys.find((city) => city === deliveryPinCodeDetails?.District)
     ) {
-      console.log("metro ");
+      Logger.log("metro ");
       // metro citys
       increment_price = cv.withinMetro;
     } else if (
       NorthEastStates.find((state) => state === pickupPinCodeDetails?.StateName) &&
       NorthEastStates.find((state) => state === deliveryPinCodeDetails?.StateName)
     ) {
-      console.log("northeast");
+      Logger.log("northeast");
       // north east
       increment_price = cv.northEast;
     } else {

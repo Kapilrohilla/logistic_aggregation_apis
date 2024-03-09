@@ -15,6 +15,7 @@ import morgan from "morgan";
 import shipmentRouter from "./routes/shipment.routes";
 import sellerRouter from "./routes/seller.routes";
 import runCron, { CONNECT_SMARTR, CONNECT_SMARTSHIP } from "./utils/cronjobs";
+import Logger from "./utils/logger";
 
 app.use(cors());
 
@@ -29,18 +30,18 @@ app.get("/ping", (_req, res: Response) => {
 });
 
 if (!config.MONGODB_URI) {
-  console.log("MONGODB_URI doesn't exists: " + config.MONGODB_URI);
+  Logger.log("MONGODB_URI doesn't exists: " + config.MONGODB_URI);
   process.exit(0);
 }
 mongoose
   .connect(process.env.MONGODB_URI!)
   .then(() => {
-    console.log(" db connected successfully");
+    Logger.log(" db connected successfully");
     CONNECT_SMARTSHIP();
     CONNECT_SMARTR();
   })
   .catch((err) => {
-    console.log(err.message);
+    Logger.log(err.message);
   });
 
 app.use("/auth", authRouter);
@@ -68,4 +69,4 @@ app.use("*", (req: Request, res: Response) => {
 
 runCron();
 
-app.listen(config.PORT, () => console.log("server running on port " + config.PORT));
+app.listen(config.PORT, () => Logger.log("server running on port " + config.PORT));

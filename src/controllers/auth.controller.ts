@@ -45,7 +45,6 @@ export const signup = async (req: Request, res: Response, next: NextFunction) =>
   const hashPassword = await bcrypt.hash(body?.password, config.SALT_ROUND!);
 
   const vendors = await VendorModel.find({});
-  console.log(vendors);
   const vendorsId = vendors.reduce((acc: any, cv: any) => {
     return acc.concat(cv._id);
   }, []);

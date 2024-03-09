@@ -2,9 +2,11 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
+const NODE_ENV = process.env.NODE_ENV;
+
 const MONGODB_URI = process.env.MONGODB_URI;
 
-let SALT_ROUND = Number(process.env.SALT_ROUND) || 10;
+const SALT_ROUND = Number(process.env.SALT_ROUND) || 10;
 
 const PORT = Number(process.env.PORT) || 8000;
 
@@ -27,6 +29,7 @@ const SMARTR_USERNAME = process.env.SMARTR_USERNAME;
 const SMARTR_PASSWORD = process.env.SMARTR_PASSWORD;
 
 const envConfig = {
+  NODE_ENV,
   MONGODB_URI,
   SALT_ROUND,
   PORT,

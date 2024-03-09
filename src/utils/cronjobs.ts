@@ -6,6 +6,7 @@ import { getSmartShipToken } from "./helpers";
 import * as cron from "node-cron";
 import EnvModel from "../models/env.model";
 import https from "node:https";
+import Logger from "./logger";
 
 /**
  * Update order with statusCode (2) to cancelled order(3)
@@ -28,7 +29,7 @@ const CANCEL_REQUESTED_ORDER = async (): Promise<void> => {
   };
   const smartshipToken = await getSmartShipToken();
   if (!smartshipToken) {
-    return console.warn("FAILED TO RUN JOB, SMARTSHIPTOKEN NOT FOUND");
+    return Logger.warn("FAILED TO RUN JOB, SMARTSHIPTOKEN NOT FOUND");
   }
   const apiUrl = config.SMART_SHIP_API_BASEURL + APIs.CANCEL_SHIPMENT;
   const shipmentAPIConfig = { headers: { Authorization: smartshipToken } };
@@ -52,8 +53,8 @@ const CANCEL_REQUESTED_ORDER = async (): Promise<void> => {
   // update db
   const findQuery = { order_reference_id: { $in: cancelled_order } };
   const ack = await B2COrderModel.updateMany(findQuery, { orderStage: 3 });
-  console.log("cronjob executed");
-  console.log(ack);
+  Logger.log("cronjob executed");
+  Logger.log(ack);
 };
 
 export const CONNECT_SMARTSHIP = () => {
@@ -68,7 +69,7 @@ export const CONNECT_SMARTSHIP = () => {
   axios
     .post("https://oauth.smartship.in/loginToken.php", requestBody)
     .then((r) => {
-      console.log("SmartShip API response: " + JSON.stringify(r.data));
+      Logger.log("SmartShip API response: " + JSON.stringify(r.data));
       const responseBody = r.data;
       const savedEnv = new EnvModel({ name: "SMARTSHIP", ...responseBody });
       EnvModel.deleteMany({ name: "SMARTSHIP" })
@@ -76,20 +77,20 @@ export const CONNECT_SMARTSHIP = () => {
           savedEnv
             .save()
             .then((r) => {
-              console.log("SMARTSHIP ENVs, updated successfully");
+              Logger.log("SMARTSHIP ENVs, updated successfully");
             })
             .catch((err) => {
-              console.log("Error: while adding environment variable to ENV Document");
-              console.log(err);
+              Logger.log("Error: while adding environment variable to ENV Document");
+              Logger.log(err);
             });
         })
         .catch((err) => {
-          console.log("Failed to clean up environment variables Document");
-          console.log(err);
+          Logger.log("Failed to clean up environment variables Document");
+          Logger.log(err);
         });
     })
     .catch((err) => {
-      console.error("SmartShip API Error Reserr?.response?.dataponse: " + JSON.stringify(err?.response?.data));
+      Logger.err("SmartShip API Error Reserr?.response?.dataponse: " + JSON.stringify(err?.response?.data));
     });
 };
 
@@ -115,14 +116,14 @@ export const CONNECT_SMARTR = async (): Promise<void> => {
       // if (deleteENV.deletedCount) {
       const env = new EnvModel({ name: "SMARTR", ...responseJSON });
       const savedEnv = await env.save();
-      console.log("SMARTR LOGGEDIN: " + JSON.stringify(savedEnv));
+      Logger.log("SMARTR LOGGEDIN: " + JSON.stringify(savedEnv));
       // }
     } else {
-      console.log("ERROR, smartr: " + JSON.stringify(responseJSON));
+      Logger.log("ERROR, smartr: " + JSON.stringify(responseJSON));
     }
   } catch (err) {
-    console.error("SOMETHING WENT WRONG..");
-    console.error(err);
+    Logger.err("SOMETHING WENT WRONG:");
+    Logger.err(err);
   }
 };
 /**
@@ -142,6 +143,6 @@ export default function runCron() {
     cron.schedule(expression4every59Minute, CONNECT_SMARTSHIP);
     cron.schedule(expression4every5Minute, CANCEL_REQUESTED_ORDER);
     cron.schedule(expression4every9_59Hr, CONNECT_SMARTR);
-    console.log("cron scheduled");
+    Logger.log("cron scheduled");
   }
 }

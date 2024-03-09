@@ -7,6 +7,7 @@ import PincodeModel from "../models/pincode.model";
 import SellerModel from "../models/seller.model";
 import { ExtendedRequest } from "./middleware";
 import APIs from "./constants/third_party_apis";
+import Logger from "./logger";
 
 export const validateEmail = (email: string): boolean => {
   return /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)*[a-zA-Z]{2,}))$/.test(
@@ -50,10 +51,9 @@ export const validateSmartShipServicablity = async (
       smartshipAPIconfig
     );
     const responseData = response.data;
-    console.log(responseData);
+    Logger.log(responseData);
     return responseData.data.serviceability_status;
   } catch (err) {
-    console.error(err);
     return false;
   }
 
@@ -90,7 +90,7 @@ export const isValidPayload = (body: any, field: string[]): boolean => {
   if (Object.keys(body).length === 0) return false;
   for (let i = 0; i < field.length; i++) {
     if (!Object.keys(body).includes(field[i])) {
-      console.log(field[i] + " is not a valid");
+      Logger.log(field[i] + " is not a valid");
       return false;
     }
   }
@@ -131,7 +131,7 @@ export const ratecalculatorController = async (req: ExtendedRequest, res: Respon
   } = req.body;
 
   const seller = req.seller;
-  console.log(seller);
+  Logger.log(seller);
   const margin = seller.margin;
 
   let volumetricWeight = null;
@@ -153,28 +153,28 @@ export const ratecalculatorController = async (req: ExtendedRequest, res: Respon
     let increment_price = null;
     if (pickupDetails.District === deliveryDetails.District) {
       // same city
-      console.log("same city");
+      Logger.log("same city");
       increment_price = cv.withinCity;
     } else if (pickupDetails.StateName === deliveryDetails.StateName) {
-      console.log("same state");
+      Logger.log("same state");
       // same state
       increment_price = cv.withinZone;
     } else if (
       MetroCitys.find((city) => city === pickupDetails?.District) &&
       MetroCitys.find((city) => city === deliveryDetails?.District)
     ) {
-      console.log("metro ");
+      Logger.log("metro ");
       // metro citys
       increment_price = cv.withinMetro;
     } else if (
       NorthEastStates.find((state) => state === pickupDetails?.StateName) &&
       NorthEastStates.find((state) => state === deliveryDetails?.StateName)
     ) {
-      console.log("northeast");
+      Logger.log("northeast");
       // north east
       increment_price = cv.northEast;
     } else {
-      console.log("roi");
+      Logger.log("roi");
       // rest of india
       increment_price = cv.withinRoi;
     }

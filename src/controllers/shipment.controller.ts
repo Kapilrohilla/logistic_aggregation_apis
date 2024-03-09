@@ -12,6 +12,7 @@ import ShipmentResponseModel from "../models/shipment-response.model";
 import VendorModel from "../models/vendor.model";
 import HubModel from "../models/hub.model";
 import type { HttpStatusCode } from "axios";
+import Logger from "../utils/logger";
 /*
 export async function createShipment(req: ExtendedRequest, res: Response, next: NextFunction) {
   const body = req.body;
@@ -312,7 +313,8 @@ export async function createShipment(req: ExtendedRequest, res: Response, next: 
   } catch (err: unknown) {
     return next(err);
   }
-  console.log(externalAPIResponse);
+  // console.log(externalAPIResponse);
+  Logger.log(externalAPIResponse);
   if (externalAPIResponse?.status === "403") {
     return res.status(500).send({ valid: true, message: "Smartship ENVs is expired." });
   }
@@ -442,7 +444,6 @@ export async function trackShipment(req: ExtendedRequest, res: Response, next: N
     if (responseJSON.message === "success") {
       const keys: string[] = Object.keys(responseJSON.data.scans);
       const requiredResponse: RequiredTrackResponse = responseJSON.data.scans[keys[0]][0];
-      /*console.log(requiredResponse);*/
       return res.status(200).send({
         valid: true,
         response: {

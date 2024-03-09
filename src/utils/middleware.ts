@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import config from "./config";
 import SellerModel from "../models/seller.model";
+import Logger from "./logger";
 
 export type ExtendedRequest = Request & {
   seller: any;
@@ -35,7 +36,7 @@ export const AuthMiddleware = async (req: ExtendedRequest, res: Response, next: 
   // extracting seller using token and seller model
   const sellerEmail = decryptedToken?.email;
   if (!sellerEmail) {
-    console.log("Error: token doens't contain email, ", sellerEmail);
+    Logger.log("Error: token doens't contain email, ", sellerEmail);
     const err = new Error("Error: token doens't contain email");
     return next(err);
   }
@@ -64,7 +65,7 @@ export const ErrorHandler = (err: any, req: Request, res: Response, next: NextFu
         message: "Invalid Id",
       });
     }
-    console.log(err);
+    Logger.log(err);
     return res.status(200).send({
       valid: false,
       message: err.message,
