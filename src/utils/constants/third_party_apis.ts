@@ -19,6 +19,10 @@ export const CREATE_SMARTR_ORDER = "https://uat.smartr.in/api/v1/add-order";
  */
 const TRACK_SMARTR_ORDER = "https://uat.smartr.in/api/v1/tracking/surface/?awbs";
 const CANCEL_SMARTR_ORDER = "https://uat.smartr.in/api/v1/cancellation/";
+/**
+ * for signle apply query with key pincode=pincodeNumber
+ */
+const PIN_CODE = "https://uat.smartr.in/api/v1/pincode/";
 
 const APIs = {
   HUB_REGISTRATION,
@@ -35,5 +39,9 @@ const APIs = {
    * eg:TRACK_SMARTR_ORDER + ""=awbNumber"
    */
   CANCEL_SMARTR_ORDER,
+  /**
+   * for signle apply query with key pincode=pincodeNumber
+   */
+  PIN_CODE,
 };
 export default APIs;

@@ -154,6 +154,7 @@ const B2COrderSchema = new mongoose.Schema({
 //   ],
 // });
 
+/*
 const B2BOrderSchema = new mongoose.Schema({
   lrNo: { type: String, required: true },
   isManual: { type: Boolean, required: false },
@@ -188,6 +189,51 @@ const B2BOrderSchema = new mongoose.Schema({
     required: true,
   },
 });
-
+*/
+const packageDetailsSchema = new mongoose.Schema({
+  boxLength: { type: Number, required: true },
+  boxHeight: { type: Number, required: true },
+  boxWidth: { type: Number, required: true },
+  boxSizeUnit: { type: String, required: true }, // should be either cm or m
+  boxWeight: { type: Number, required: true },
+  boxWeightUnit: { type: String, required: true }, // should be either g or kg
+  invoiceNumber: { type: String, required: false },
+  description: { type: String, required: false },
+  quantity: { type: Number, required: true, default: 1 },
+});
+const ewaysSchema = new mongoose.Schema({
+  amount: { type: Number, required: true },
+  ewayBill: { type: String, required: true },
+  invoiceNumber: { type: Number, required: true },
+});
+const B2BOrderSchema = new mongoose.Schema({
+  client_name: { type: String, required: true },
+  freightType: { type: Number, required: true, default: 0 }, // 0 -> paid, 1 -> toPay
+  pickupType: { type: Number, required: true, default: 0 }, // 0 -> FM-Pickup, 1 -> SelfDrop
+  InsuranceType: { type: Number, required: true, default: 0 }, // 0-> OwnerRisk, 1-> Carrier Risk
+  pickupAddress: { type: mongoose.Schema.Types.ObjectId, ref: "Hubs" },
+  invoiceNumber: { type: String, required: false },
+  description: { type: String, required: false },
+  totalOrderValue: { type: Number, required: true },
+  amount2Collect: { type: Number, required: true, default: 0 },
+  gstDetails: {
+    shipperGSTIN: { type: String, required: true },
+    consigneeGSTIN: { type: String, required: true },
+  },
+  packageDetails: {
+    type: [packageDetailsSchema],
+    required: true,
+  },
+  eways: {
+    type: [ewaysSchema],
+    required: true,
+  },
+  customers: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "B2BCustomer",
+    },
+  ],
+});
 export const B2COrderModel = mongoose.model("B2COrders", B2COrderSchema);
 export const B2BOrderModel = mongoose.model("B2BOrder", B2BOrderSchema);

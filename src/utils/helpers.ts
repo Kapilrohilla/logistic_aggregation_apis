@@ -8,6 +8,7 @@ import SellerModel from "../models/seller.model";
 import { ExtendedRequest } from "./middleware";
 import APIs from "./constants/third_party_apis";
 import Logger from "./logger";
+import https from "node:https";
 
 export const validateEmail = (email: string): boolean => {
   return /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)*[a-zA-Z]{2,}))$/.test(
@@ -280,3 +281,83 @@ export async function getSMARTRToken(): Promise<string | false> {
   const token = env?.data?.token_type + " " + env?.data?.access_token;
   return token;
 }
+
+export async function isSmartr_surface_servicable(pincode: number): Promise<boolean> {
+  /*
+  let config = {
+    method: "get",
+    maxBodyLength: Infinity,
+    url: "https://uat.smartr.in/api/v1/pincode?pincode=122008",
+    httpsAgent: new https.Agent({
+      rejectUnauthorized: false,
+    }),
+    headers: {
+      Cookie:
+        "csrftoken=1qesTyXbnnTIfNWLe8h8oAizJxVM8xtvTmZZRtoQhEdhH7KcfbywxXL892Qda2l4; sessionid=6rf0mzqk7pqif84y4se21hu9u63balbl",
+    },
+  };
+
+  axios
+    .request(config)
+    .then((response) => {
+      console.log(JSON.stringify(response.data));
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+  */
+  // /*
+  let response;
+  const token = await getSMARTRToken();
+  if (!token) return false;
+  try {
+    console.log(APIs.PIN_CODE + "?pincode=122008");
+    console.log(token);
+    response = await axios.get(APIs.PIN_CODE + `?pincode=${pincode}`, {
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+      headers: {
+        Authorization: token,
+      },
+    });
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      console.log(err.message);
+      return false;
+    } else {
+      console.log(err);
+      return false;
+    }
+  }
+  const data: PINCODE_RESPONSE = response.data;
+  Logger.log("pincode response");
+  Logger.log(data);
+  Logger.log("pincode response");
+  if (!data?.error && data.status === "failed") return false;
+  if (data?.data) return true;
+  return false;
+}
+
+type PINCODE_RESPONSE = {
+  status: "failed" | "Success";
+  error?: string;
+  data: [
+    {
+      pincode: number;
+      area_name: string;
+      city_name: string;
+      service_center: string;
+      state_code: string;
+      state_name: string;
+      inbound: boolean;
+      outbound: boolean;
+      embargo: boolean;
+      is_surface: boolean;
+      region: string;
+      country_code: string;
+      zone: string;
+      route_code: string;
+      services: string;
+      is_active: boolean;
+    }
+  ];
+};

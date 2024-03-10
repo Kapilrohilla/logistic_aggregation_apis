@@ -553,7 +553,7 @@ export async function createB2BShipment(req: ExtendedRequest, res: Response, nex
 
 export async function trackB2BShipment(req: ExtendedRequest, res: Response, next: NextFunction) {
   const awb = "SLAWB00269";
-  // const awb = "s2345aaaa";
+  // const awb = "s2345aaaa"; // wrong awb
   const smartr_token = await getSMARTRToken();
   if (!smartr_token) {
     return res.status(500).send({ valid: false, message: "SMARTr token not found" });

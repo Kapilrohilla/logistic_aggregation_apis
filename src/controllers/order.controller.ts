@@ -14,6 +14,7 @@ import {
 } from "../utils/helpers";
 import { isValidObjectId } from "mongoose";
 import Logger from "../utils/logger";
+import type { ObjectId } from "mongoose";
 
 // export const createB2COrder = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
 //   const body = req.body;
@@ -330,72 +331,89 @@ export const getOrders = async (req: ExtendedRequest, res: Response, next: NextF
 };
 
 export const createB2BOrder = async (req: Request, res: Response, next: NextFunction) => {
-  const body = req.body;
-
+  const body: B2BOrderPayload = req.body;
   if (
     !isValidPayload(body, [
       "client_name",
-      "freight",
-      "pickup_type",
-      "insurance_type",
+      "freightType",
+      "pickupType",
+      "InsuranceType",
       "pickupAddress",
+      "invoiceNumber",
+      "description",
+      "totalOrderValue",
+      "amount2Collect",
+      "shipperGSTIN",
+      "consigneeGSTIN",
       "packageDetails",
-      "ammount",
+      "eways",
+      "customerDetails",
     ])
   ) {
+    return res.status(200).send({ valid: false, message: "Invalid Payload" });
   }
-  /*
-  const body = req.body;
-
-  // validating pickup address
-  if (!body?.pickupAddress) {
-    return res.status(200).send({
-      valid: false,
-      message: "pickupAddress required",
-    });
+  if (!isValidObjectId(body?.pickupAddress)) {
+    return res.status(200).send({ valid: "Invalid pickupAddress." });
   }
-  if (isValidObjectId(body?.pickupAddress)) {
-    return res.status(200).send({ valid: false, message: "invalid pickupAddress" });
+  if (!isValidObjectId(body?.customerDetails)) {
+    return res.status(200).send({ valid: "Invalid customerDetails." });
   }
-
-  // checking if the order already exists with same "client_reference_order_id"
-  const isAlreadyExists =
-    (await B2BOrderModel.findOne({ client_reference_order_id: body?.client_reference_order_id }).lean()) !== null;
-
-  if (isAlreadyExists) {
-    return res.status(200).send({
-      valid: false,
-      message: `Order already exists with client_reference_order_id: ${body?.client_reference_order_id} `,
-    });
+  if (!Array.isArray(body?.packageDetails)) {
+    return res.status(200).send({ valid: false, message: "packageDetails should be array" });
+  }
+  if (!Array.isArray(body?.eways)) {
+    return res.status(200).send({ valid: false, message: "eways should be an array" });
   }
 
+  const isAlreadyExists = (await B2BOrderModel.findOne({ client_name: body.client_name }).lean()) !== null;
+  if (isAlreadyExists) return res.status(200).send({ valid: false, message: "Client name already exists" });
+
+  const data2save = {
+    client_name: body?.client_name,
+    freightType: body?.freightType, // 0 -> paid, 1 -> toPay
+    pickupType: body?.pickupType, // 0 -> FM-Pickup, 1 -> SelfDrop
+    InsuranceType: body?.InsuranceType, // 0-> OwnerRisk, 1-> Carrier Risk
+    pickupAddress: body?.pickupAddress,
+    invoiceNumber: body?.invoiceNumber,
+    description: body?.description,
+    totalOrderValue: body?.totalOrderValue,
+    amount2Collect: body?.amount2Collect,
+    gstDetails: {
+      shipperGSTIN: body?.shipperGSTIN,
+      consigneeGSTIN: body?.consigneeGSTIN,
+    },
+    packageDetails: [
+      ...body.packageDetails,
+      // {
+      //   boxLength: body?.packageDetails?.boxLength,
+      //   boxHeight: body?.packageDetails?.boxHeight,
+      //   boxWidth: body?.packageDetails?.boxWidth,
+      //   boxSizeUnit: body?.packageDetails?.boxSizeUnit, // should be either cm or m
+      //   boxWeight: body?.packageDetails?.boxWeight,
+      //   boxWeightUnit: body?.packageDetails?.boxWeightUnit, // should be either g or kg
+      //   invoiceNumber: body?.packageDetails?.invoiceNumber,
+      //   description: body?.packageDetails?.description,
+      //   quantity: body?.packageDetails?.quantity,
+      // },
+    ],
+    eways: [
+      // {
+      //   amount: body?.eways?.amount,
+      //   ewayBill: body?.eways?.ewayBill,
+      //   invoiceNumber: body?.eways?.invoiceNumber,
+      // },
+      ...body?.eways,
+    ],
+    customers: [body?.customerDetails],
+  };
   try {
-    const doesItExists = (await HubModel.findById(body?.pickupAddress)) !== null;
-    if (!doesItExists) {
-      return res.status(200).send({ valid: false, message: "pickup address doesn't exists as hub" });
-    }
+    const B2BOrder2Save = new B2BOrderModel(data2save);
+    const savedOrder = await B2BOrder2Save.save();
+    return res.status(200).send({ valid: true, order: savedOrder });
   } catch (err) {
     return next(err);
   }
-
-  // validating pickup address end
-
-  const order2save = new B2BOrderModel(body);
-  let savedOrder;
-  try {
-    savedOrder = await order2save.save();
-
-    return res.status(200).send({
-      valid: false,
-      message: "order created successfully",
-      savedOrder,
-    });
-  } catch (err) {
-    return next(err);
-  }
-
-  return res.status(200).json({ valid: true, order: savedOrder });
-  */
+  return res.status(500).send({ valid: true, message: "Incomplete route", data2save });
 };
 
 export const getCourier = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
@@ -599,4 +617,22 @@ type PickupAddress = {
   code?: number;
   message?: string;
   hub_id?: number;
+};
+
+type B2BOrderPayload = {
+  // here client_name would be work as client_reference_id
+  client_name: string;
+  freightType: number;
+  pickupType: number;
+  InsuranceType: number;
+  pickupAddress: ObjectId;
+  invoiceNumber: string;
+  description: string;
+  totalOrderValue: number;
+  amount2Collect: number;
+  shipperGSTIN: string;
+  consigneeGSTIN: string;
+  packageDetails: any;
+  eways: any;
+  customerDetails: ObjectId;
 };
