@@ -176,6 +176,7 @@ import type { ObjectId } from "mongoose";
 //   });
 // };
 
+// TODO create api to delete orders
 export const createB2COrder = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
   const body = req.body;
   if (!body) return res.status(200).send({ valid: false, message: "Invalid payload" });
@@ -234,7 +235,7 @@ export const createB2COrder = async (req: ExtendedRequest, res: Response, next: 
     if (!hubDetails) return res.status(200).send({ valid: false, message: "Pickup address doesn't exists" });
 
     if (!hubDetails.hub_id)
-      res.status(200).send({ valid: false, message: "Pickup address is not regiestered at smartship" });
+      return res.status(200).send({ valid: false, message: "Pickup address is not regiestered at smartship" });
   } catch (err) {
     return next(err);
   }
@@ -320,7 +321,8 @@ export const getOrders = async (req: ExtendedRequest, res: Response, next: NextF
   let orders, orderCount;
   try {
     orders = await B2COrderModel.find({ sellerId }).limit(limit).skip(skip).populate("productId");
-    orderCount = await B2COrderModel.countDocuments();
+
+    orderCount = await B2COrderModel.countDocuments({ sellerId: sellerId });
   } catch (err) {
     return next(err);
   }

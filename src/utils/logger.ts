@@ -17,7 +17,13 @@ const err = (...props: LogP) => {
     console.error(...props);
   }
 };
-
-const Logger = { log, warn, err };
+/**
+ * logger function to log in production
+ * @params content to log
+ */
+const plog = (...props: LogP) => {
+  console.log(...props);
+};
+const Logger = { log, warn, err, plog };
 export default Logger;
 type LogP = any[];

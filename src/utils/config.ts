@@ -4,7 +4,7 @@ dotenv.config();
 
 const NODE_ENV = process.env.NODE_ENV;
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URI = NODE_ENV === "PRODUCTION" ? process.env.PRO_MONGODB_URI : process.env.MONGODB_URI;
 
 const SALT_ROUND = Number(process.env.SALT_ROUND) || 10;
 

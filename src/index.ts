@@ -34,9 +34,9 @@ if (!config.MONGODB_URI) {
   process.exit(0);
 }
 mongoose
-  .connect(process.env.MONGODB_URI!)
+  .connect(config.MONGODB_URI)
   .then(() => {
-    Logger.log(" db connected successfully");
+    Logger.plog(" db connected successfully");
     CONNECT_SMARTSHIP();
     CONNECT_SMARTR();
   })
@@ -69,4 +69,4 @@ app.use("*", (req: Request, res: Response) => {
 
 runCron();
 
-app.listen(config.PORT, () => Logger.log("server running on port " + config.PORT));
+app.listen(config.PORT, () => Logger.plog("server running on port " + config.PORT));

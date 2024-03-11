@@ -6,8 +6,10 @@ import axios from "axios";
 import config from "../utils/config";
 import APIs from "../utils/constants/third_party_apis";
 import EnvModel from "../models/env.model";
-import { getPincodeDetails, getSMARTRToken, isValidPayload, validatePhone } from "../utils/helpers";
+import { getPincodeDetails, getSmartShipToken, isValidPayload, validatePhone } from "../utils/helpers";
+import Logger from "../utils/logger";
 
+// FIXME smartship doesn't expect the hub with same address is the address mateches with some other address hub would not be created.
 export const createHub = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
   const body = req.body;
 
@@ -64,7 +66,7 @@ export const createHub = async (req: ExtendedRequest, res: Response, next: NextF
   const city = pincodeDetails?.District;
   const state = pincodeDetails?.StateName;
 
-  const smartshipToken = await getSMARTRToken();
+  const smartshipToken = await getSmartShipToken();
   if (!smartshipToken) return res.status(200).send({ valid: false, message: "smartship ENVs not found" });
 
   const smartshipAPIconfig = { headers: { Authorization: smartshipToken } };
@@ -93,6 +95,7 @@ export const createHub = async (req: ExtendedRequest, res: Response, next: NextF
   }
 
   const smartShipData: SMARTSHIP_DATA = smartShipResponse.data;
+  console.log(smartShipData);
   let hubId = 0; // if hub_id is not available in smartShipData
   if (smartShipData.status && smartShipData.data.hub_id) {
     hubId = smartShipData.data.hub_id;
@@ -232,7 +235,7 @@ export const updateHub = async (req: ExtendedRequest, res: Response, next: NextF
 
   const { hub_id, name, phone, pincode, city, state, address1, address2, delivery_type_id } = hubData;
 
-  const smartshipToken = await getSMARTRToken();
+  const smartshipToken = await getSmartShipToken();
   if (!smartshipToken) return res.status(500).send({ valid: false, message: "SMARTSHIP envs not found" });
 
   if (body?.pincode) {
@@ -303,12 +306,12 @@ export const deleteHub = async (req: ExtendedRequest, res: Response, next: NextF
 
   let hubData;
   try {
-    hubData = await HubModel.findById(hubId);
+    hubData = await HubModel.find({ _id: hubId, sellerId: sellerId });
   } catch (err) {
     return next(err);
   }
-
-  if (!hubData) return res.status(200).send({ valid: false, message: "hub not found" });
+  console.log(hubData);
+  if (hubData.length < 1) return res.status(200).send({ valid: false, message: "hub not found" });
 
   const env = await EnvModel.findOne({}).lean();
   if (!env) {
@@ -319,11 +322,11 @@ export const deleteHub = async (req: ExtendedRequest, res: Response, next: NextF
   }
 
   // const smartshipToken = env.token_type + " " + env.access_token;
-  const smartshipToken = await getSMARTRToken();
+  const smartshipToken = await getSmartShipToken();
   if (smartshipToken === false) return res.status(200).send({ valid: false, message: "smartship ENVs not found" });
 
   const smartshipAPIconfig = { headers: { Authorization: smartshipToken } };
-  const smartshipAPIPayload = { hub_ids: [hubData.hub_id] };
+  const smartshipAPIPayload = { hub_ids: [hubData[0].hub_id] };
 
   const response = await axios.post(
     config.SMART_SHIP_API_BASEURL + APIs.HUB_DELETE,
@@ -331,7 +334,7 @@ export const deleteHub = async (req: ExtendedRequest, res: Response, next: NextF
     smartshipAPIconfig
   );
   const smartShipResponseData = response.data;
-
+  Logger.plog(JSON.stringify(smartShipResponseData));
   if (!smartShipResponseData.status) return res.status(200).send({ valid: false, message: "Failed to delete Hub" });
   try {
     const deletedHub = await HubModel.findByIdAndDelete(hubId);

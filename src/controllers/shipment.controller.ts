@@ -206,7 +206,7 @@ export async function createShipment(req: ExtendedRequest, res: Response, next: 
 }
 */
 
-// orderType = 0 ? "b2c" : "b2b"
+// TODO: REMOVE THIS CODE: orderType = 0 ? "b2c" : "b2b"
 export async function createShipment(req: ExtendedRequest, res: Response, next: NextFunction) {
   const body = req.body;
 

@@ -53,7 +53,7 @@ const CANCEL_REQUESTED_ORDER = async (): Promise<void> => {
   // update db
   const findQuery = { order_reference_id: { $in: cancelled_order } };
   const ack = await B2COrderModel.updateMany(findQuery, { orderStage: 3 });
-  Logger.log("cronjob executed");
+  Logger.plog("cronjob executed");
   Logger.log(ack);
 };
 
@@ -77,7 +77,7 @@ export const CONNECT_SMARTSHIP = () => {
           savedEnv
             .save()
             .then((r) => {
-              Logger.log("SMARTSHIP ENVs, updated successfully");
+              Logger.plog("SMARTSHIP ENVs, updated successfully");
             })
             .catch((err) => {
               Logger.log("Error: while adding environment variable to ENV Document");
@@ -116,7 +116,7 @@ export const CONNECT_SMARTR = async (): Promise<void> => {
       // if (deleteENV.deletedCount) {
       const env = new EnvModel({ name: "SMARTR", ...responseJSON });
       const savedEnv = await env.save();
-      Logger.log("SMARTR LOGGEDIN: " + JSON.stringify(savedEnv));
+      Logger.plog("SMARTR LOGGEDIN: " + JSON.stringify(savedEnv));
       // }
     } else {
       Logger.log("ERROR, smartr: " + JSON.stringify(responseJSON));
