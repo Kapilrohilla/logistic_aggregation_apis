@@ -177,6 +177,7 @@ import type { ObjectId } from "mongoose";
 // };
 
 // TODO create api to delete orders
+
 export const createB2COrder = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
   const body = req.body;
   if (!body) return res.status(200).send({ valid: false, message: "Invalid payload" });
@@ -187,7 +188,7 @@ export const createB2COrder = async (req: ExtendedRequest, res: Response, next: 
   if (
     !isValidPayload(body, [
       "order_reference_id",
-      "total_order_value",
+      // "total_order_value",
       "payment_mode",
       "customerDetails",
       "productDetails",
