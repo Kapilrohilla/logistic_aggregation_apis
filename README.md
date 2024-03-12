@@ -6,6 +6,8 @@ POSTMAN Collection -> https://api.postman.com/collections/27213613-43e0c244-ee8a
 
 ### Development
 
+#### NOTE: Start the redis server before starting the application
+
 Clone this repository and move at desired path
 
 ```bash

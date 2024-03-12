@@ -332,7 +332,7 @@ export const getOrders = async (req: ExtendedRequest, res: Response, next: NextF
   });
 };
 
-export const createB2BOrder = async (req: Request, res: Response, next: NextFunction) => {
+export const createB2BOrder = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
   const body: B2BOrderPayload = req.body;
   if (
     !isValidPayload(body, [
@@ -372,6 +372,7 @@ export const createB2BOrder = async (req: Request, res: Response, next: NextFunc
 
   const data2save = {
     client_name: body?.client_name,
+    sellerId: req.seller._id,
     freightType: body?.freightType, // 0 -> paid, 1 -> toPay
     pickupType: body?.pickupType, // 0 -> FM-Pickup, 1 -> SelfDrop
     InsuranceType: body?.InsuranceType, // 0-> OwnerRisk, 1-> Carrier Risk

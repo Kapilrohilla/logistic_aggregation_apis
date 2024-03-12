@@ -7,6 +7,7 @@ import * as cron from "node-cron";
 import EnvModel from "../models/env.model";
 import https from "node:https";
 import Logger from "./logger";
+import redis from "../models/redis";
 
 /**
  * Update order with statusCode (2) to cancelled order(3)
@@ -74,6 +75,16 @@ export const CONNECT_SMARTSHIP = () => {
       const savedEnv = new EnvModel({ name: "SMARTSHIP", ...responseBody });
       EnvModel.deleteMany({ name: "SMARTSHIP" })
         .then(() => {
+          //@ts-ignore
+          const token = `${savedEnv?.token_type} ${savedEnv?.access_token}`;
+          redis.set("token:smartship", token);
+          redis.expire("token:smartship", 3600, (err) => {
+            if (err) {
+              Logger.warn(err);
+            } else {
+              Logger.log("smartship token cached.");
+            }
+          });
           savedEnv
             .save()
             .then((r) => {
@@ -115,6 +126,16 @@ export const CONNECT_SMARTR = async (): Promise<void> => {
       const deleteENV = await EnvModel.deleteOne({ name: "SMARTR" }).lean();
       // if (deleteENV.deletedCount) {
       const env = new EnvModel({ name: "SMARTR", ...responseJSON });
+      //@ts-ignore
+      const token = env?.data?.token_type + " " + env?.data?.access_token;
+      redis.set("token:smartr", token);
+      redis.expire("token:smartr", 36000, (err, next) => {
+        if (err) {
+          Logger.warn("failed to set ttl to token:smartr");
+        } else {
+          Logger.log("SMARTr, ttl expiration set");
+        }
+      });
       const savedEnv = await env.save();
       Logger.plog("SMARTR LOGGEDIN: " + JSON.stringify(savedEnv));
       // }

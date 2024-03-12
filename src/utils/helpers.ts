@@ -9,6 +9,7 @@ import { ExtendedRequest } from "./middleware";
 import APIs from "./constants/third_party_apis";
 import Logger from "./logger";
 import https from "node:https";
+import redis from "../models/redis";
 
 export const validateEmail = (email: string): boolean => {
   return /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)*[a-zA-Z]{2,}))$/.test(
@@ -267,19 +268,28 @@ export const MetroCitys = [
 export const NorthEastStates = ["Sikkim", "Mizoram", "Manipur", "Assam", "Megalaya", "Nagaland", "Tripura"];
 
 export async function getSmartShipToken(): Promise<string | false> {
-  const env = await EnvModel.findOne({ name: "SMARTSHIP" }).lean();
-  if (!env) return false;
-  //@ts-ignore
-  const smartshipToken = env?.token_type + " " + env?.access_token;
-  return smartshipToken;
+  const token = await redis.get("token:smartship");
+  if (token) {
+    return token;
+  } else {
+    const env = await EnvModel.findOne({ name: "SMARTSHIP" }).lean();
+    if (!env) return false;
+    //@ts-ignore
+    const smartshipToken = env?.token_type + " " + env?.access_token;
+    return smartshipToken;
+  }
 }
 export async function getSMARTRToken(): Promise<string | false> {
-  const env = await EnvModel.findOne({ name: "SMARTR" }).lean();
-  if (!env) return false;
-
-  //@ts-ignore
-  const token = env?.data?.token_type + " " + env?.data?.access_token;
-  return token;
+  const tok = await redis.get("token:smartr");
+  if (tok) {
+    return tok;
+  } else {
+    const env = await EnvModel.findOne({ name: "SMARTR" }).lean();
+    if (!env) return false;
+    //@ts-ignore
+    const token = env?.data?.token_type + " " + env?.data?.access_token;
+    return token;
+  }
 }
 
 export async function isSmartr_surface_servicable(pincode: number): Promise<boolean> {

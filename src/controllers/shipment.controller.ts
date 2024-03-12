@@ -1,6 +1,6 @@
 import { type Request, type Response, type NextFunction, response } from "express";
 import { getSMARTRToken, getSmartShipToken, isValidPayload } from "../utils/helpers";
-import { B2COrderModel } from "../models/order.model";
+import { B2BOrderModel, B2COrderModel } from "../models/order.model";
 import { isValidObjectId } from "mongoose";
 import axios from "axios";
 import config from "../utils/config";
@@ -464,26 +464,49 @@ export async function trackShipment(req: ExtendedRequest, res: Response, next: N
   return res.status(500).send({ valid: false, message: "Incomplete route" });
 }
 
+/**
+ *
+ * @param ExtendedRequest
+ * @param Response
+ * @param NextFunction
+ * @author kapilrohilla
+ * @body {orderId: string}
+ * @returns
+ */
 export async function createB2BShipment(req: ExtendedRequest, res: Response, next: NextFunction) {
+  const body = req.body;
+  const sellerId = req.seller._id;
+  if (!isValidPayload(body, ["orderId"])) return res.status(200).send({ valid: false, message: "Invalid payload" });
+  if (!isValidObjectId(body?.orderId)) return res.status(200).send({ valid: false, message: "invalid orderId" });
+
+  const order = await B2BOrderModel.findOne({ _id: body?.orderId, sellerId })
+    .populate("customers")
+    .populate("pickupAddress")
+    .lean();
+  if (!order) return res.status(200).send({ valid: false, message: "order not found" });
+  console.log(order, 0);
   const smartr_token = await getSMARTRToken();
   if (!smartr_token) return res.status(500).send({ valid: false, message: "SMARTR token not found" });
 
+  // TODO: adjust totalOrderWeight according to their unit.
+  const totalOrderWeight = order?.packageDetails?.reduce((acc, cv) => acc + cv.boxWeight, 0);
+  console.log(totalOrderWeight, 0);
   let data = [
     {
       packageDetails: {
         awbNumber: "",
-        orderNumber: "5765678910123",
-        productType: "WKO",
-        collectableValue: "0",
-        declaredValue: "99",
-        itemDesc: "Nykaa lipstik",
+        orderNumber: "0000000000000000",
+        productType: "WKO", // WKO for surface bookings
+        collectableValue: order?.amount2Collect,
+        declaredValue: order?.totalOrderValue,
+        itemDesc: order?.description,
         dimensions: "10~10~10~1~0.5~0/",
-        pieces: "1",
-        weight: "12",
-        invoiceNumber: "34543",
+        pieces: order?.packageDetails.length + "",
+        weight: totalOrderWeight + "",
+        invoiceNumber: order.invoiceNumber + "",
       },
       deliveryDetails: {
-        toName: "Ankur",
+        toName: "kapil rohilla",
         toAdd: "plot no. 198, sector-110, Gurgaon",
         toCity: "Gurgaon",
         toState: "HR",
@@ -530,6 +553,9 @@ export async function createB2BShipment(req: ExtendedRequest, res: Response, nex
       },
     },
   ];
+  console.log(data);
+
+  return res.sendStatus(500);
 
   const apiConfig = {
     headers: {

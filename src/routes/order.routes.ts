@@ -20,6 +20,7 @@ orderRouter.get("/:id", getSpecificOrder);
 // @ts-ignore
 orderRouter.post("/b2c", createB2COrder);
 
+// @ts-ignore
 orderRouter.post("/b2b", createB2BOrder);
 
 // @ts-ignore

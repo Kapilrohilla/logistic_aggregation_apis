@@ -44,7 +44,6 @@ const B2COrderSchema = new mongoose.Schema({
   productId: { type: mongoose.Schema.Types.ObjectId, ref: "Products", required: true },
 
   order_reference_id: { type: String, required: true },
-  total_order_value: { type: Number, required: true, min: 0 },
   payment_mode: { type: Number, required: true }, // 0 -> prepaid, 1 -> COD
   order_invoice_date: { type: String, required: true },
   order_invoice_number: { type: Number, required: true },
@@ -208,14 +207,15 @@ const ewaysSchema = new mongoose.Schema({
 });
 const B2BOrderSchema = new mongoose.Schema({
   client_name: { type: String, required: true },
+  sellerId: { type: String, required: true },
   freightType: { type: Number, required: true, default: 0 }, // 0 -> paid, 1 -> toPay
   pickupType: { type: Number, required: true, default: 0 }, // 0 -> FM-Pickup, 1 -> SelfDrop
   InsuranceType: { type: Number, required: true, default: 0 }, // 0-> OwnerRisk, 1-> Carrier Risk
-  pickupAddress: { type: mongoose.Schema.Types.ObjectId, ref: "Hubs" },
+  pickupAddress: { type: mongoose.Schema.Types.ObjectId, ref: "Hub" },
   invoiceNumber: { type: String, required: false },
   description: { type: String, required: false },
   totalOrderValue: { type: Number, required: true },
-  amount2Collect: { type: Number, required: true, default: 0 },
+  amount2Collect: { type: Number, required: false, default: 0 },
   gstDetails: {
     shipperGSTIN: { type: String, required: true },
     consigneeGSTIN: { type: String, required: true },
